@@ -126,6 +126,190 @@ var opCodeList = map[byte]*OpCode{
 		Base: "ASL",
 		Mode: ADDR_ABSX,
 	},
+	0x20: {
+		Base: "JSR",
+		Mode: ADDR_ABS,
+	},
+	0x21: {
+		Base: "AND",
+		Mode: ADDR_XIND,
+	},
+	0x24: {
+		Base: "BIT",
+		Mode: ADDR_ZPG,
+	},
+	0x25: {
+		Base: "AND",
+		Mode: ADDR_ZPG,
+	},
+	0x26: {
+		Base: "ROL",
+		Mode: ADDR_ZPG,
+	},
+	0x28: {
+		Base: "PLP",
+		Mode: ADDR_IMPL,
+	},
+	0x29: {
+		Base: "AND",
+		Mode: ADDR_SHARP,
+	},
+	0x2C: {
+		Base: "BIT",
+		Mode: ADDR_ABS,
+	},
+	0x2D: {
+		Base: "AND",
+		Mode: ADDR_ABS,
+	},
+	0x2E: {
+		Base: "ROL",
+		Mode: ADDR_ABS,
+	},
+	0x30: {
+		Base: "BMI",
+		Mode: ADDR_REL,
+	},
+	0x31: {
+		Base: "AND",
+		Mode: ADDR_INDY,
+	},
+	0x35: {
+		Base: "AND",
+		Mode: ADDR_ZPGX,
+	},
+	0x36: {
+		Base: "ROL",
+		Mode: ADDR_ZPGX,
+	},
+	0x38: {
+		Base: "SEC",
+		Mode: ADDR_IMPL,
+	},
+	0x39: {
+		Base: "AND",
+		Mode: ADDR_ABSY,
+	},
+	0x3D: {
+		Base: "AND",
+		Mode: ADDR_ABSX,
+	},
+	0x3E: {
+		Base: "ROL",
+		Mode: ADDR_ABSX,
+	},
+	0x40: {
+		Base: "RTI",
+		Mode: ADDR_IMPL,
+	},
+	0x41: {
+		Base: "EOR",
+		Mode: ADDR_XIND,
+	},
+	0x45: {
+		Base: "EOR",
+		Mode: ADDR_ZPG,
+	},
+	0x46: {
+		Base: "LSR",
+		Mode: ADDR_ZPG,
+	},
+	0x48: {
+		Base: "PHA",
+		Mode: ADDR_IMPL,
+	},
+	0x49: {
+		Base: "EOR",
+		Mode: ADDR_SHARP,
+	},
+	0x4A: {
+		Base: "LSR",
+		Mode: ADDR_A,
+	},
+	0x4C: {
+		Base: "JMP",
+		Mode: ADDR_ABS,
+	},
+	0x4D: {
+		Base: "EOR",
+		Mode: ADDR_ABS,
+	},
+	0x4E: {
+		Base: "LSR",
+		Mode: ADDR_ABS,
+	},
+	0x50: {
+		Base: "BVC",
+		Mode: ADDR_REL,
+	},
+	0x51: {
+		Base: "EOR",
+		Mode: ADDR_INDY,
+	},
+	0x55: {
+		Base: "EOR",
+		Mode: ADDR_ZPGX,
+	},
+	0x56: {
+		Base: "LSR",
+		Mode: ADDR_ZPGX,
+	},
+	0x58: {
+		Base: "CLI",
+		Mode: ADDR_IMPL,
+	},
+	0x59: {
+		Base: "EOR",
+		Mode: ADDR_ABSY,
+	},
+	0x5D: {
+		Base: "EOR",
+		Mode: ADDR_ABSX,
+	},
+	0x5E: {
+		Base: "LSR",
+		Mode: ADDR_ABSX,
+	},
+	0x60: {
+		Base: "RTS",
+		Mode: ADDR_IMPL,
+	},
+	0x61: {
+		Base: "ADC",
+		Mode: ADDR_XIND,
+	},
+	0x65: {
+		Base: "ADC",
+		Mode: ADDR_ZPG,
+	},
+	0x66: {
+		Base: "ROR",
+		Mode: ADDR_ZPG,
+	},
+	0x68: {
+		Base: "PLA",
+		Mode: ADDR_IMPL,
+	},
+	0x69: {
+		Base: "ADC",
+		Mode: ADDR_SHARP,
+	},
+	0x6A: {
+		Base: "ROR",
+		Mode: ADDR_A,
+	},
+	0x6C: {
+		Base: "JMP",
+		Mode: ADDR_IND,
+	},
+	0x6D: {
+		Base: "ADC",
+		Mode: ADDR_ABS,
+	},
+	0x6E: {
+		Base: "ROR",
+		Mode: ADDR_ABS,
+	},
 }
 
 func main() {
