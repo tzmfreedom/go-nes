@@ -310,6 +310,110 @@ var opCodeList = map[byte]*OpCode{
 		Base: "ROR",
 		Mode: ADDR_ABS,
 	},
+	0x70: {
+		Base: "BVS",
+		Mode: ADDR_REL,
+	},
+	0x71: {
+		Base: "ADC",
+		Mode: ADDR_INDY,
+	},
+	0x75: {
+		Base: "ADC",
+		Mode: ADDR_ZPGX,
+	},
+	0x76: {
+		Base: "ROR",
+		Mode: ADDR_ZPGX,
+	},
+	0x78: {
+		Base: "SEI",
+		Mode: ADDR_IMPL,
+	},
+	0x79: {
+		Base: "ADC",
+		Mode: ADDR_ABSY,
+	},
+	0x7D: {
+		Base: "ADC",
+		Mode: ADDR_ABSX,
+	},
+	0x7E: {
+		Base: "ROR",
+		Mode: ADDR_ABSX,
+	},
+	0x81: {
+		Base: "STA",
+		Mode: ADDR_XIND,
+	},
+	0x84: {
+		Base: "STY",
+		Mode: ADDR_ZPG,
+	},
+	0x85: {
+		Base: "STA",
+		Mode: ADDR_ZPG,
+	},
+	0x86: {
+		Base: "STX",
+		Mode: ADDR_ZPG,
+	},
+	0x88: {
+		Base: "DEY",
+		Mode: ADDR_IMPL,
+	},
+	0x8A: {
+		Base: "TXA",
+		Mode: ADDR_IMPL,
+	},
+	0x8C: {
+		Base: "STY",
+		Mode: ADDR_ABS,
+	},
+	0x8D: {
+		Base: "STA",
+		Mode: ADDR_ABS,
+	},
+	0x8E: {
+		Base: "STX",
+		Mode: ADDR_ABS,
+	},
+	0x90: {
+		Base: "BCC",
+		Mode: ADDR_REL,
+	},
+	0x91: {
+		Base: "STA",
+		Mode: ADDR_INDY,
+	},
+	0x94: {
+		Base: "STY",
+		Mode: ADDR_ZPGX,
+	},
+	0x95: {
+		Base: "STA",
+		Mode: ADDR_ZPGX,
+	},
+	0x96: {
+		Base: "STX",
+		Mode: ADDR_ZPGY,
+	},
+	0x98: {
+		Base: "TYA",
+		Mode: ADDR_IMPL,
+	},
+	0x99: {
+		Base: "STA",
+		Mode: ADDR_ABSY,
+	},
+	0x9A: {
+		Base: "TXS",
+		Mode: ADDR_IMPL,
+	},
+	0x9D: {
+		Base: "STA",
+		Mode: ADDR_ABSX,
+	},
 }
 
 func main() {
