@@ -414,6 +414,250 @@ var opCodeList = map[byte]*OpCode{
 		Base: "STA",
 		Mode: ADDR_ABSX,
 	},
+	0xA0: {
+		Base: "LDY",
+		Mode: ADDR_SHARP,
+	},
+	0xA1: {
+		Base: "LDA",
+		Mode: ADDR_XIND,
+	},
+	0xA2: {
+		Base: "LDX",
+		Mode: ADDR_SHARP,
+	},
+	0xA4: {
+		Base: "LDY",
+		Mode: ADDR_ZPG,
+	},
+	0xA5: {
+		Base: "LDA",
+		Mode: ADDR_ZPG,
+	},
+	0xA6: {
+		Base: "LDX",
+		Mode: ADDR_ZPG,
+	},
+	0xA8: {
+		Base: "TAY",
+		Mode: ADDR_IMPL,
+	},
+	0xA9: {
+		Base: "LDA",
+		Mode: ADDR_SHARP,
+	},
+	0xAA: {
+		Base: "TAX",
+		Mode: ADDR_IMPL,
+	},
+	0xAC: {
+		Base: "LDY",
+		Mode: ADDR_ABS,
+	},
+	0xAD: {
+		Base: "LDA",
+		Mode: ADDR_ABS,
+	},
+	0xAE: {
+		Base: "LDX",
+		Mode: ADDR_ABS,
+	},
+	0xB0: {
+		Base: "BCS",
+		Mode: ADDR_REL,
+	},
+	0xB1: {
+		Base: "LDA",
+		Mode: ADDR_INDY,
+	},
+	0xB4: {
+		Base: "LDY",
+		Mode: ADDR_ZPGX,
+	},
+	0xB5: {
+		Base: "LDA",
+		Mode: ADDR_ZPGX,
+	},
+	0xB6: {
+		Base: "LDX",
+		Mode: ADDR_ZPGY,
+	},
+	0xB8: {
+		Base: "CLV",
+		Mode: ADDR_IMPL,
+	},
+	0xB9: {
+		Base: "LDA",
+		Mode: ADDR_ABSY,
+	},
+	0xBA: {
+		Base: "TSX",
+		Mode: ADDR_IMPL,
+	},
+	0xBC: {
+		Base: "LDY",
+		Mode: ADDR_ABSX,
+	},
+	0xBD: {
+		Base: "LDA",
+		Mode: ADDR_ABSX,
+	},
+	0xBE: {
+		Base: "LDX",
+		Mode: ADDR_ABSY,
+	},
+	0xC0: {
+		Base: "CPY",
+		Mode: ADDR_SHARP,
+	},
+	0xC1: {
+		Base: "CMP",
+		Mode: ADDR_XIND,
+	},
+	0xC4: {
+		Base: "CPY",
+		Mode: ADDR_ZPG,
+	},
+	0xC5: {
+		Base: "CMP",
+		Mode: ADDR_ZPG,
+	},
+	0xC6: {
+		Base: "DEC",
+		Mode: ADDR_ZPG,
+	},
+	0xC8: {
+		Base: "INY",
+		Mode: ADDR_IMPL,
+	},
+	0xC9: {
+		Base: "CMP",
+		Mode: ADDR_SHARP,
+	},
+	0xCA: {
+		Base: "DEX",
+		Mode: ADDR_IMPL,
+	},
+	0xCC: {
+		Base: "CPY",
+		Mode: ADDR_ABS,
+	},
+	0xCD: {
+		Base: "CMP",
+		Mode: ADDR_ABS,
+	},
+	0xCE: {
+		Base: "DEC",
+		Mode: ADDR_ABS,
+	},
+	0xD0: {
+		Base: "BNE",
+		Mode: ADDR_REL,
+	},
+	0xD1: {
+		Base: "CMP",
+		Mode: ADDR_INDY,
+	},
+	0xD5: {
+		Base: "CMP",
+		Mode: ADDR_ZPGX,
+	},
+	0xD6: {
+		Base: "DEC",
+		Mode: ADDR_ZPGX,
+	},
+	0xD8: {
+		Base: "CLD",
+		Mode: ADDR_IMPL,
+	},
+	0xD9: {
+		Base: "CMP",
+		Mode: ADDR_ABSY,
+	},
+	0xDD: {
+		Base: "CMP",
+		Mode: ADDR_ABSX,
+	},
+	0xDE: {
+		Base: "DEC",
+		Mode: ADDR_ABSX,
+	},
+	0xE0: {
+		Base: "CPX",
+		Mode: ADDR_SHARP,
+	},
+	0xE1: {
+		Base: "SBC",
+		Mode: ADDR_XIND,
+	},
+	0xE4: {
+		Base: "CPX",
+		Mode: ADDR_ZPG,
+	},
+	0xE5: {
+		Base: "SBC",
+		Mode: ADDR_ZPG,
+	},
+	0xE6: {
+		Base: "INC",
+		Mode: ADDR_ZPG,
+	},
+	0xE8: {
+		Base: "INX",
+		Mode: ADDR_IMPL,
+	},
+	0xE9: {
+		Base: "SBC",
+		Mode: ADDR_SHARP,
+	},
+	0xEA: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0xEC: {
+		Base: "CPX",
+		Mode: ADDR_ABS,
+	},
+	0xED: {
+		Base: "SBC",
+		Mode: ADDR_ABS,
+	},
+	0xEE: {
+		Base: "INC",
+		Mode: ADDR_ABS,
+	},
+	0xF0: {
+		Base: "BEQ",
+		Mode: ADDR_REL,
+	},
+	0xF1: {
+		Base: "SBC",
+		Mode: ADDR_INDY,
+	},
+	0xF5: {
+		Base: "SBC",
+		Mode: ADDR_ZPGX,
+	},
+	0xF6: {
+		Base: "INC",
+		Mode: ADDR_ZPGX,
+	},
+	0xF8: {
+		Base: "SED",
+		Mode: ADDR_IMPL,
+	},
+	0xF9: {
+		Base: "SBC",
+		Mode: ADDR_ABSY,
+	},
+	0xFD: {
+		Base: "SBC",
+		Mode: ADDR_ABSX,
+	},
+	0xFE: {
+		Base: "INC",
+		Mode: ADDR_ABSX,
+	},
 }
 
 func main() {
