@@ -39,6 +39,38 @@ type OpCode struct {
 	Base string
 	Mode int
 	Cycle int
+	Operand byte
+}
+
+func (opCode *OpCode) FetchOperand(cpu *Cpu) {
+	switch opCode.Mode {
+	case ADDR_IMPL:
+		return
+	case ADDR_A:
+		return
+	case ADDR_SHARP:
+		opCode.Operand = cpu.Fetch()
+	case ADDR_ZPG:
+		opCode.Operand = cpu.Fetch()
+	case ADDR_ZPGX:
+		opCode.Operand = byte(int(cpu.Fetch()) + cpu.Register.X)
+	case ADDR_ZPGY:
+		opCode.Operand = byte(int(cpu.Fetch()) + cpu.Register.Y)
+	case ADDR_ABS:
+		opCode.Operand = byte(int(cpu.Fetch()) + int(cpu.Fetch()) * 256)
+	case ADDR_ABSX:
+		opCode.Operand = byte(int(cpu.Fetch()) + int(cpu.Fetch()) * 256 + cpu.Register.X)
+	case ADDR_ABSY:
+		opCode.Operand = byte(int(cpu.Fetch()) + int(cpu.Fetch()) * 256 + cpu.Register.Y)
+	case ADDR_REL:
+		opCode.Operand = byte(int(cpu.Fetch()) + int(cpu.Fetch()))
+	case ADDR_XIND:
+		opCode.Operand = byte(int(cpu.Read(int(cpu.Fetch()))) + cpu.Register.X + int(cpu.Fetch()) * 256)
+	case ADDR_INDY:
+		opCode.Operand = byte(int(cpu.Read(int(cpu.Fetch()))) + (int(cpu.Fetch()) + cpu.Register.Y) * 256)
+	case ADDR_IND:
+		opCode.Operand = byte(int(cpu.Read(int(cpu.Fetch()) + int(cpu.Fetch()) * 256)) + int(cpu.Fetch()) * 256)
+	}
 }
 
 const (
@@ -691,30 +723,150 @@ func main() {
 	cpu.Reset()
 }
 
+func (cpu *Cpu) Read(index int) byte {
+	if index < 0x0800 {
+
+	}
+	if index < 0x2000 {
+
+	}
+	if index < 0x2008 {
+
+	}
+	if index < 0x4000 {
+
+	}
+	if index < 0x4020 {
+
+	}
+	if index < 0x6000 {
+
+	}
+	if index < 0x8000 {
+
+	}
+	return cpu.PrgROM[index - 0x8000]
+}
+
 func (cpu *Cpu) Reset() {
-	f := cpu.PrgROM[0xFFFC - 0x8000]
-	s := cpu.PrgROM[0xFFFD - 0x8000]
-	cpu.Register.PC = int(s)*256+int(f) - 0x8000
+	f := cpu.Read(0xFFFC)
+	s := cpu.Read(0xFFFD)
+	cpu.Register.PC = int(s)*256+int(f)
 }
 
 func (cpu *Cpu) Fetch() byte {
-	ret := cpu.PrgROM[cpu.Register.PC]
+	ret := cpu.Read(cpu.Register.PC)
 	cpu.Register.PC++
 	return ret
-}
-
-func (cpu *Cpu) FetchOperand(opCode *OpCode) byte {
-	return 0x00
 }
 
 func (cpu *Cpu) Run() {
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
-	opRand := cpu.FetchOperand(opCode)
-	cpu.Execute(opCode, opRand)
+	opCode.FetchOperand(cpu)
+	cpu.Execute(opCode)
 }
 
-func (cpu *Cpu) Execute(opCode *OpCode, opRand byte) {}
+func bool2int (v bool) int {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func (cpu *Cpu) Execute(opCode *OpCode) {
+	var data byte
+	switch opCode.Base {
+	case "ADC":
+		if opCode.Mode == ADDR_SHARP {
+			data = opCode.Operand
+		} else {
+			data = cpu.Read(int(opCode.Operand))
+		}
+		cpu.Register.A = cpu.Register.A + int(data) + bool2int(cpu.Register.P.Carry)
+	case "SBC":
+		if opCode.Mode == ADDR_SHARP {
+			data = opCode.Operand
+		} else {
+			data = cpu.Read(int(opCode.Operand))
+		}
+		cpu.Register.A = cpu.Register.A - int(data) + bool2int(!cpu.Register.P.Carry)
+	case "AND":
+		if opCode.Mode == ADDR_SHARP {
+			data = opCode.Operand
+		} else {
+			data = cpu.Read(int(opCode.Operand))
+		}
+		cpu.Register.A = cpu.Register.A & int(data)
+	case "ORA":
+		if opCode.Mode == ADDR_SHARP {
+			data = opCode.Operand
+		} else {
+			data = cpu.Read(int(opCode.Operand))
+		}
+		cpu.Register.A = cpu.Register.A | int(data)
+	case "EOR":
+	case "ASL":
+	case "LSR":
+	case "ROL":
+	case "ROR":
+	case "BCC":
+	case "BCS":
+	case "BEQ":
+	case "BNE":
+	case "BVC":
+	case "BVS":
+	case "BPL":
+	case "BMI":
+	case "BIT":
+	case "JMP":
+	case "JSR":
+	case "RTS":
+	case "BRK":
+	case "RTI":
+	case "CMP":
+	case "CPX":
+	case "CPY":
+	case "INC":
+	case "DEC":
+	case "INX":
+	case "DEX":
+	case "INY":
+	case "DEY":
+	case "CLC":
+		cpu.Register.P.Carry = false
+	case "SEC":
+		cpu.Register.P.Carry = true
+	case "CLI":
+		cpu.Register.P.Interrupt = false
+	case "SEI":
+		cpu.Register.P.Interrupt = true
+	case "CLD":
+		cpu.Register.P.Decimal = false
+	case "SED":
+		cpu.Register.P.Decimal = true
+	case "CLV":
+		cpu.Register.P.Overflow = false
+	case "LDA":
+	case "LDX":
+	case "LDY":
+	case "STA":
+	case "STX":
+	case "STY":
+	case "TAX":
+	case "TXA":
+	case "TAY":
+	case "TYA":
+	case "TSX":
+	case "TXS":
+	case "PHA":
+	case "PLA":
+	case "PHP":
+	case "PLP":
+	case "NOP":
+		return
+	}
+}
 
 type Image struct {
 	bitMap [][]int
