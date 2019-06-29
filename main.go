@@ -43,6 +43,7 @@ func main() {
 		sprites[i] = NewImage(chrRom[index : index+16])
 	}
 	ppu.sprites = sprites
+	cpu.PPU = ppu
 	cpu.Reset()
 	nes := &NES{
 		cpu:   cpu,
@@ -118,10 +119,35 @@ type PPU struct {
 	line       int
 	background *BackGround
 	sprites    []*Sprite
+	buf int
 }
 
 func NewPPU() *PPU {
-	return &PPU{}
+	return &PPU{
+		RAM: make([]int, 0x4000),
+		background: NewBackGround(),
+	}
+}
+
+
+func (ppu *PPU) Write(index, data int) {
+	switch index {
+	case 0x0000:
+	case 0x0001:
+	case 0x0002:
+	case 0x0003:
+	case 0x0004:
+	case 0x0005:
+	case 0x0006:
+		if ppu.buf == 0 {
+			ppu.buf += data * 256
+		} else {
+			ppu.buf += data
+		}
+	case 0x0007:
+		ppu.RAM[ppu.buf] = data
+	case 0x0008:
+	}
 }
 
 type BackGround struct {
@@ -167,7 +193,7 @@ func (ppu *PPU) Run(cycle int) *BackGround {
 }
 
 func (ppu *PPU) BuildBackGround() {
-	y := ppu.line / 8
+	y := (ppu.line-1)/ 8
 	for x := 0; x < 32; x++ {
 		tile := ppu.BuildTile(x, y)
 		ppu.background.Add(x, y, tile)
@@ -186,7 +212,7 @@ func (ppu *PPU) BuildTile(x, y int) *Tile {
 func (ppu *PPU) getPalletId(x, y int) int {
 	tmpX := x / 2
 	tmpY := y / 2
-	palletBlock := ppu.RAM[tmpX+tmpY*8]
+	palletBlock := ppu.RAM[tmpX+tmpY*8+0x23C0]
 
 	var blockId uint
 	cmpX := (tmpX / 2) % 2
@@ -208,7 +234,8 @@ func (ppu *PPU) getPalletId(x, y int) int {
 }
 
 func (ppu *PPU) getSprite(x, y int) *Sprite {
-	return ppu.sprites[x+y*32]
+	spriteId := ppu.RAM[x+y*32+0x2000]
+	return ppu.sprites[spriteId]
 }
 
 type StatusRegister struct {
@@ -246,7 +273,7 @@ func (r *StatusRegister) Set(v int) {
 
 type Cpu struct {
 	RAM      []int
-	PPU      []int
+	PPU      *PPU
 	APU      []int
 	Register *Register
 	PrgROM   []byte
@@ -305,7 +332,7 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x2000 {
 		cpu.RAM[index-0x0800] = value
 	} else if index < 0x2008 {
-
+		cpu.PPU.Write(index-0x2000, value)
 	} else if index < 0x4000 {
 
 	} else if index < 0x4020 {
@@ -327,7 +354,7 @@ func (cpu *Cpu) Read(index int) int {
 		return cpu.RAM[index-0x800]
 	}
 	if index < 0x2008 {
-		panic(index)
+		// panic(index)
 	}
 	if index < 0x4000 {
 
