@@ -21,9 +21,9 @@ func main() {
 	fmt.Println(string(b[0]) + string(b[1]) + string(b[2]))
 	prgSize := int(b[4])
 	chrSize := int(b[5])
-	prgRomEnd := 0x10 + prgSize * 0x4000
+	prgRomEnd := 0x10 + prgSize*0x4000
 	prgRom := b[0x10:prgRomEnd]
-	chrRom := b[prgRomEnd:prgRomEnd+chrSize*0x2000]
+	chrRom := b[prgRomEnd : prgRomEnd+chrSize*0x2000]
 	fmt.Printf("PRG SIZE: %d => %d\n", prgSize, len(prgRom))
 	fmt.Printf("CHR SIZE: %d => %d\n", chrSize, len(chrRom))
 
@@ -39,14 +39,14 @@ func main() {
 	ppu := NewPPU()
 	sprites := make([]*Sprite, 512)
 	for i := 0; i < 512; i++ {
-		index := i*16
-		sprites[i] = NewImage(chrRom[index:index+16])
+		index := i * 16
+		sprites[i] = NewImage(chrRom[index : index+16])
 	}
 	ppu.sprites = sprites
 	cpu.Reset()
 	nes := &NES{
-		cpu: cpu,
-		ppu: ppu,
+		cpu:   cpu,
+		ppu:   ppu,
 		cycle: 0,
 	}
 	if err := ebiten.Run(nes.update, 512, 480, 1, "NES"); err != nil {
@@ -55,16 +55,16 @@ func main() {
 }
 
 type NES struct {
-	cpu *Cpu
-	ppu *PPU
-	cycle int
+	cpu        *Cpu
+	ppu        *PPU
+	cycle      int
 	background *BackGround
-	pallet *Pallet
+	pallet     *Pallet
 }
 
 func (nes *NES) update(screen *ebiten.Image) error {
 	nes.cycle += nes.cpu.Run()
-	background := nes.ppu.Run(nes.cycle*3)
+	background := nes.ppu.Run(nes.cycle * 3)
 	if background != nil {
 		nes.render(screen, background)
 	} else if nes.background != nil {
@@ -103,21 +103,21 @@ func (nes *NES) renderTile(screen *ebiten.Image, x, y int, tile *Tile) {
 	}
 }
 
-type Register struct{
-	A int
-	X int
-	Y int
-	P *StatusRegister
+type Register struct {
+	A  int
+	X  int
+	Y  int
+	P  *StatusRegister
 	SP int
 	PC int
 }
 
 type PPU struct {
-	RAM []int
-	cycle int
-	line int
+	RAM        []int
+	cycle      int
+	line       int
 	background *BackGround
-	sprites []*Sprite
+	sprites    []*Sprite
 }
 
 func NewPPU() *PPU {
@@ -143,11 +143,10 @@ func NewBackGround() *BackGround {
 }
 
 type Pallet struct {
-
 }
 
 type Tile struct {
-	img *Sprite
+	img      *Sprite
 	palletId int
 }
 
@@ -156,7 +155,7 @@ func (ppu *PPU) Run(cycle int) *BackGround {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
-		if ppu.line < 240 && ppu.line % 8 == 0 {
+		if ppu.line < 240 && ppu.line%8 == 0 {
 			ppu.BuildBackGround()
 		}
 		if ppu.line == 262 {
@@ -179,19 +178,19 @@ func (ppu *PPU) BuildTile(x, y int) *Tile {
 	palletId := ppu.getPalletId(x, y)
 	sprite := ppu.getSprite(x, y)
 	return &Tile{
-		img: sprite,
+		img:      sprite,
 		palletId: palletId,
 	}
 }
 
 func (ppu *PPU) getPalletId(x, y int) int {
-	tmpX := x/2
-	tmpY := y/2
+	tmpX := x / 2
+	tmpY := y / 2
 	palletBlock := ppu.RAM[tmpX+tmpY*8]
 
 	var blockId uint
-	cmpX := (tmpX/2)%2
-	cmpY := (tmpY/2)%2
+	cmpX := (tmpX / 2) % 2
+	cmpY := (tmpY / 2) % 2
 	if cmpX == 0 {
 		if cmpY == 0 {
 			blockId = 1
@@ -212,54 +211,54 @@ func (ppu *PPU) getSprite(x, y int) *Sprite {
 	return ppu.sprites[x+y*32]
 }
 
-type StatusRegister struct{
-	Negative bool
-	Overflow bool
-	Reserved bool
-	Break bool
-	Decimal bool
+type StatusRegister struct {
+	Negative  bool
+	Overflow  bool
+	Reserved  bool
+	Break     bool
+	Decimal   bool
 	Interrupt bool
-	Zero bool
-	Carry bool
+	Zero      bool
+	Carry     bool
 }
 
 func (r *StatusRegister) Int() int {
-	return bool2int(r.Negative) * int(math.Pow(2, 7)) +
-		bool2int(r.Overflow) * int(math.Pow(2, 6)) +
-		bool2int(r.Reserved) * int(math.Pow(2, 5)) +
-		bool2int(r.Break) * int(math.Pow(2, 4)) +
-		bool2int(r.Decimal) * int(math.Pow(2, 3)) +
-		bool2int(r.Interrupt) * int(math.Pow(2, 2)) +
-		bool2int(r.Zero) * int(math.Pow(2, 1)) +
-		bool2int(r.Carry) * int(math.Pow(2, 0))
+	return bool2int(r.Negative)*int(math.Pow(2, 7)) +
+		bool2int(r.Overflow)*int(math.Pow(2, 6)) +
+		bool2int(r.Reserved)*int(math.Pow(2, 5)) +
+		bool2int(r.Break)*int(math.Pow(2, 4)) +
+		bool2int(r.Decimal)*int(math.Pow(2, 3)) +
+		bool2int(r.Interrupt)*int(math.Pow(2, 2)) +
+		bool2int(r.Zero)*int(math.Pow(2, 1)) +
+		bool2int(r.Carry)*int(math.Pow(2, 0))
 }
 
 func (r *StatusRegister) Set(v int) {
-	r.Negative  = v & int(math.Pow(2, 7)) != 0
-	r.Overflow  = v & int(math.Pow(2, 6)) != 0
-	r.Reserved  = v & int(math.Pow(2, 5)) != 0
-	r.Break     = v & int(math.Pow(2, 4)) != 0
-	r.Decimal   = v & int(math.Pow(2, 3)) != 0
-	r.Interrupt = v & int(math.Pow(2, 2)) != 0
-	r.Zero      = v & int(math.Pow(2, 1)) != 0
-	r.Carry     = v & int(math.Pow(2, 0)) != 0
+	r.Negative = v&int(math.Pow(2, 7)) != 0
+	r.Overflow = v&int(math.Pow(2, 6)) != 0
+	r.Reserved = v&int(math.Pow(2, 5)) != 0
+	r.Break = v&int(math.Pow(2, 4)) != 0
+	r.Decimal = v&int(math.Pow(2, 3)) != 0
+	r.Interrupt = v&int(math.Pow(2, 2)) != 0
+	r.Zero = v&int(math.Pow(2, 1)) != 0
+	r.Carry = v&int(math.Pow(2, 0)) != 0
 }
 
 type Cpu struct {
-	RAM []int
-	PPU []int
-	APU []int
+	RAM      []int
+	PPU      []int
+	APU      []int
 	Register *Register
-	PrgROM []byte
-	ChrROM []byte
+	PrgROM   []byte
+	ChrROM   []byte
 }
 
 var sprites []*Sprite
 
 type OpCode struct {
-	Base string
-	Mode int
-	Cycle int
+	Base    string
+	Mode    int
+	Cycle   int
 	Operand int
 }
 
@@ -278,19 +277,19 @@ func (opCode *OpCode) FetchOperand(cpu *Cpu) {
 	case ADDR_ZPGY:
 		opCode.Operand = cpu.Fetch() + cpu.Register.Y
 	case ADDR_ABS:
-		opCode.Operand = cpu.Fetch() + cpu.Fetch() * 256
+		opCode.Operand = cpu.Fetch() + cpu.Fetch()*256
 	case ADDR_ABSX:
-		opCode.Operand = cpu.Fetch() + cpu.Fetch() * 256 + cpu.Register.X
+		opCode.Operand = cpu.Fetch() + cpu.Fetch()*256 + cpu.Register.X
 	case ADDR_ABSY:
-		opCode.Operand = cpu.Fetch() + cpu.Fetch() * 256 + cpu.Register.Y
+		opCode.Operand = cpu.Fetch() + cpu.Fetch()*256 + cpu.Register.Y
 	case ADDR_REL:
 		opCode.Operand = cpu.Fetch() + cpu.Fetch()
 	case ADDR_XIND:
-		opCode.Operand = cpu.Read(cpu.Fetch()) + cpu.Register.X + cpu.Fetch() * 256
+		opCode.Operand = cpu.Read(cpu.Fetch()) + cpu.Register.X + cpu.Fetch()*256
 	case ADDR_INDY:
-		opCode.Operand = cpu.Read(cpu.Fetch()) + (cpu.Fetch() + cpu.Register.Y) * 256
+		opCode.Operand = cpu.Read(cpu.Fetch()) + (cpu.Fetch()+cpu.Register.Y)*256
 	case ADDR_IND:
-		opCode.Operand = cpu.Read(cpu.Fetch() + cpu.Fetch() * 256) + cpu.Fetch() * 256
+		opCode.Operand = cpu.Read(cpu.Fetch()+cpu.Fetch()*256) + cpu.Fetch()*256
 	}
 }
 
@@ -316,7 +315,7 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x8000 {
 
 	} else {
-		cpu.PrgROM[index - 0x8000] = byte(value)
+		cpu.PrgROM[index-0x8000] = byte(value)
 	}
 }
 
@@ -342,13 +341,13 @@ func (cpu *Cpu) Read(index int) int {
 	if index < 0x8000 {
 
 	}
-	return int(cpu.PrgROM[index - 0x8000])
+	return int(cpu.PrgROM[index-0x8000])
 }
 
 func (cpu *Cpu) Reset() {
 	f := cpu.Read(0xFFFC)
 	s := cpu.Read(0xFFFD)
-	cpu.Register.PC = int(s)*256+int(f)
+	cpu.Register.PC = int(s)*256 + int(f)
 }
 
 func (cpu *Cpu) Fetch() int {
@@ -404,10 +403,10 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.A >>= 1
 		cpu.Register.P.Carry = (cpu.Register.A & int(math.Pow(2, 0))) != 0
 	case "ROL":
-		cpu.Register.A = cpu.Register.A << 1 + bool2int(cpu.Register.P.Carry)
+		cpu.Register.A = cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
 		cpu.Register.P.Carry = (cpu.Register.A & int(math.Pow(2, 7))) != 0
 	case "ROR":
-		cpu.Register.A = cpu.Register.A >> 1 + bool2int(cpu.Register.P.Carry) * int(math.Pow(2, 7))
+		cpu.Register.A = cpu.Register.A>>1 + bool2int(cpu.Register.P.Carry)*int(math.Pow(2, 7))
 		cpu.Register.P.Carry = (cpu.Register.A & int(math.Pow(2, 0))) != 0
 	case "BCC":
 	case "BCS":
@@ -434,19 +433,19 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		if cpu.Register.A - data > 0 {
+		if cpu.Register.A-data > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
 		}
 	case "CPX":
-		if cpu.Register.X - data > 0 {
+		if cpu.Register.X-data > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
 		}
 	case "CPY":
-		if cpu.Register.Y - data > 0 {
+		if cpu.Register.Y-data > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
@@ -562,7 +561,7 @@ const ImageSize = 8
 
 func NewImage(src []byte) *Sprite {
 	bitMap := make([][]int, ImageSize)
-	for i := 0; i < ImageSize; i ++ {
+	for i := 0; i < ImageSize; i++ {
 		bit := make([]int, ImageSize)
 		for j := 0; j < ImageSize; j++ {
 			b := 0
@@ -586,10 +585,9 @@ func debug(args ...interface{}) {
 	pp.Println(args...)
 }
 
-func bool2int (v bool) int {
+func bool2int(v bool) int {
 	if v {
 		return 1
 	}
 	return 0
 }
-
