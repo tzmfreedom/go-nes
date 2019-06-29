@@ -656,3 +656,47 @@ var opCodeList = map[int]*OpCode{
 		Mode: ADDR_ABSX,
 	},
 }
+
+type OpCode struct {
+	Base    string
+	Mode    int
+	Cycle   int
+	Operand int
+}
+
+func (opCode *OpCode) FetchOperand(cpu *Cpu) {
+	switch opCode.Mode {
+	case ADDR_IMPL:
+		return
+	case ADDR_A:
+		return
+	case ADDR_IMMEDIATE:
+		opCode.Operand = cpu.Fetch()
+	case ADDR_ZPG:
+		opCode.Operand = cpu.Fetch()
+	case ADDR_ZPGX:
+		opCode.Operand = cpu.Fetch() + cpu.Register.X
+	case ADDR_ZPGY:
+		opCode.Operand = cpu.Fetch() + cpu.Register.Y
+	case ADDR_ABS:
+		l := cpu.Fetch()
+		h := cpu.Fetch()
+		opCode.Operand = l + h*256
+	case ADDR_ABSX:
+		l := cpu.Fetch()
+		h := cpu.Fetch()
+		opCode.Operand = l + h * 256 + cpu.Register.X
+	case ADDR_ABSY:
+		l := cpu.Fetch()
+		h := cpu.Fetch()
+		opCode.Operand = l + h * 256 + cpu.Register.Y
+	case ADDR_REL:
+		opCode.Operand = cpu.Register.PC + cpu.Fetch()
+	case ADDR_XIND:
+		opCode.Operand = cpu.Read(cpu.Fetch()) + cpu.Register.X + cpu.Fetch()*256
+	case ADDR_INDY:
+		opCode.Operand = cpu.Read(cpu.Fetch()) + (cpu.Fetch()+cpu.Register.Y)*256
+	case ADDR_IND:
+		opCode.Operand = cpu.Read(cpu.Fetch()+cpu.Fetch()*256) + cpu.Fetch()*256
+	}
+}
