@@ -42,13 +42,13 @@ func (ppu *PPU) Write(index, data int) {
 	case 0x0004:
 	case 0x0005:
 	case 0x0006:
-		debug(data)
 		if ppu.addr == 0 {
 			ppu.addr += data * 256
 		} else {
 			ppu.addr += data
 		}
 	case 0x0007:
+		debug("address", ppu.addr)
 		ppu.RAM[ppu.addr] = data
 		ppu.addr += 0x01 // TODO: impl
 	}
