@@ -48,18 +48,16 @@ func main() {
 		cpu: cpu,
 		ppu: ppu,
 	}
-	//nes.Run()
-	if err := ebiten.Run(nes.update, 256, 240, 1, "sample"); err != nil {
+	if err := ebiten.Run(nes.update, 256, 240, 2, "sample"); err != nil {
 		log.Fatal(err)
 	}
-
-	log.Fatal(err)
 }
 
 type NES struct {
 	cpu        *Cpu
 	ppu        *PPU
 	background *BackGround
+	pallet     *Pallet
 }
 
 func (nes *NES) update(screen *ebiten.Image) error {
@@ -69,26 +67,28 @@ func (nes *NES) update(screen *ebiten.Image) error {
 
 	for {
 		cycle := nes.cpu.Run()
-		background := nes.ppu.Run(cycle * 3)
+		background, pallet := nes.ppu.Run(cycle * 3)
 		if background != nil {
 			nes.background = background
+			nes.pallet = pallet
 		}
 		if nes.background != nil {
-			nes.renderEbiten(screen, nes.background)
+			nes.renderEbiten(screen, nes.background, nes.pallet)
 			break
 		}
 	}
 	return nil
 }
 
-func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround) {
+func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, pallet *Pallet) {
 	for i, line := range background.tiles {
 		for j, tile := range line {
 			for y, line := range tile.img.bitMap {
 				for x, bit := range line {
 					if bit != 0 {
 						img, _ := ebiten.NewImage(1, 1, 0)
-						img.Fill(color.RGBA{0xff, 0xff, 0xff, 0xff})
+						c := pallet.getColor(tile.palletId, bit)
+						img.Fill(color.RGBA{c.R, c.G, c.B, 0xff})
 						options := &ebiten.DrawImageOptions{}
 						options.GeoM.Translate(float64(j*SpriteSize+x), float64(i*SpriteSize+y))
 						screen.DrawImage(img, options)
@@ -97,28 +97,6 @@ func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround) {
 			}
 		}
 	}
-}
-
-func (nes *NES) render(background *BackGround) {
-	fmt.Print("\033[2J")
-	fmt.Print("\r")
-	fmt.Print("\033[;H")
-	for _, line := range background.tiles {
-		for k := 0; k < 8; k++ {
-			for _, tile := range line {
-				for l := 0; l < 8; l++ {
-					if tile.img.bitMap[k][l] == 0 {
-						fmt.Print(" ")
-					} else {
-						fmt.Print("*")
-					}
-				}
-				fmt.Print("  ")
-			}
-			fmt.Println()
-		}
-	}
-	os.Exit(0)
 }
 
 type Register struct {

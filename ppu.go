@@ -57,7 +57,7 @@ func (ppu *PPU) Write(index, data int) {
 	}
 }
 
-func (ppu *PPU) Run(cycle int) *BackGround {
+func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet) {
 	ppu.cycle += cycle
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
@@ -69,10 +69,10 @@ func (ppu *PPU) Run(cycle int) *BackGround {
 			ppu.line = 0
 			background := ppu.background
 			ppu.background = NewBackGround()
-			return background
+			return background, ppu.getPallet()
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func (ppu *PPU) BuildBackGround() {
@@ -81,6 +81,10 @@ func (ppu *PPU) BuildBackGround() {
 		tile := ppu.BuildTile(x, y)
 		ppu.background.Add(x, y, tile)
 	}
+}
+
+func (ppu *PPU) getPallet() *Pallet {
+	return NewPallet(ppu.RAM[0x3F00:0x3F10])
 }
 
 func (ppu *PPU) BuildTile(x, y int) *Tile {
@@ -113,7 +117,7 @@ func (ppu *PPU) getPalletId(x, y int) int {
 			blockId = 4
 		}
 	}
-	return (palletBlock >> (blockId * 2)) & 0x11
+	return (palletBlock >> (blockId * 2)) & 3
 }
 
 func (ppu *PPU) getSprite(x, y int) *Sprite {
@@ -125,4 +129,18 @@ type RGB struct {
 	R uint8
 	G uint8
 	B uint8
+}
+
+type Pallet struct {
+	src []int
+}
+
+func NewPallet(src []int) *Pallet {
+	return &Pallet{
+		src: src,
+	}
+}
+
+func (p *Pallet) getColor(palletId int, bit int) *RGB {
+	return colors[p.src[palletId*4+bit]]
 }
