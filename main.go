@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/hajimehoshi/ebiten"
 	"github.com/k0kubun/pp"
+	"image/color"
 	"io/ioutil"
 	"log"
 	"math"
@@ -41,12 +43,17 @@ func main() {
 	}
 	ppu.sprites = sprites
 	cpu.PPU = ppu
+	cpu.Reset()
 	nes := &NES{
 		cpu:   cpu,
 		ppu:   ppu,
 		cycle: 0,
 	}
-	nes.Run()
+	//nes.Run()
+	if err := ebiten.Run(nes.update, 256, 240, 1, "sample"); err != nil {
+		log.Fatal(err)
+	}
+
 	log.Fatal(err)
 }
 
@@ -58,7 +65,6 @@ type NES struct {
 }
 
 func (nes *NES) Run() {
-	nes.cpu.Reset()
 	for {
 		nes.cycle += nes.cpu.Run()
 		background := nes.ppu.Run(nes.cycle * 3)
@@ -67,6 +73,41 @@ func (nes *NES) Run() {
 		}
 	}
 }
+
+
+func (nes *NES) update(screen *ebiten.Image) error {
+	if ebiten.IsDrawingSkipped() {
+		return nil
+	}
+	nes.cycle += nes.cpu.Run()
+	background := nes.ppu.Run(nes.cycle * 3)
+	if background != nil {
+		nes.renderEbiten(screen, background)
+		nes.background = background
+	} else if nes.background != nil {
+		nes.renderEbiten(screen, nes.background)
+	}
+	return nil
+}
+
+func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround) {
+	for i, line := range background.tiles {
+		for j, tile := range line {
+			for y, line := range tile.img.bitMap {
+				for x, bit := range line {
+					if bit != 0 {
+						img, _ := ebiten.NewImage(1, 1, 0)
+						img.Fill(color.RGBA{0xff, 0xff, 0xff, 0xff})
+						options := &ebiten.DrawImageOptions{}
+						options.GeoM.Translate(float64(j*SpriteSize+x), float64(i*SpriteSize+y))
+						screen.DrawImage(img, options)
+					}
+				}
+			}
+		}
+	}
+}
+
 
 func (nes *NES) render_(background *BackGround) {
 	//fmt.Print("\033[2J")
