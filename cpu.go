@@ -75,9 +75,9 @@ func (cpu *Cpu) Run() int {
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
-	debug(opCodeRaw)
-	debug(opCode)
-	debug(cpu.Register)
+	//debug(opCodeRaw)
+	//debug(opCode)
+	//debug(cpu.Register)
 	if opCode.Base == "BRK" {
 		os.Exit(0)
 	}
@@ -198,7 +198,6 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 	case "JMP":
 		cpu.Register.PC = opCode.Operand
 	case "JSR":
-		debug(opCode)
 		cpu.PushStack(cpu.Register.PC)
 		cpu.Register.PC = opCode.Operand
 	case "RTS":

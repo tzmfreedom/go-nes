@@ -14,7 +14,7 @@ func NewSprite(src []byte) *Sprite {
 		bit := make([]int, SpriteSize)
 		for j := 0; j < SpriteSize; j++ {
 			b := 0
-			mul := int(math.Pow(2, float64(j)))
+			mul := int(math.Pow(2, float64(SpriteSize - j - 1)))
 			if (int(src[i]) & mul) != 0 {
 				b += 1
 			}

@@ -64,30 +64,51 @@ func (nes *NES) Run() {
 		background := nes.ppu.Run(nes.cycle * 3)
 		if background != nil {
 			nes.render(background)
-		} else if nes.background != nil {
-			nes.render(nes.background)
 		}
 	}
 }
 
-func (nes *NES) render(background *BackGround) {
+func (nes *NES) render_(background *BackGround) {
+	//fmt.Print("\033[2J")
+	//fmt.Print("\r")
+	//fmt.Print("\033[;H")
 	for i, line := range background.tiles {
 		for j, tile := range line {
 			nes.renderTile(j, i, tile)
 		}
 	}
+	os.Exit(0)
+}
+
+func (nes *NES) render(background *BackGround) {
+	fmt.Print("\033[2J")
+	fmt.Print("\r")
+	fmt.Print("\033[;H")
+	for _, line := range background.tiles {
+		for k := 0; k < 8; k++ {
+			for _, tile := range line {
+				for l := 0; l < 8; l++ {
+					if tile.img.bitMap[k][l] == 0 {
+						fmt.Print(" ")
+					} else {
+						fmt.Print("*")
+					}
+				}
+				fmt.Print("  ")
+			}
+			fmt.Println()
+		}
+	}
+	os.Exit(0)
 }
 
 func (nes *NES) renderTile(x, y int, tile *Tile) {
-	//fmt.Print("\033[2J")
-	//fmt.Print("\r")
-	//fmt.Print("\033[;H")
 	for _, line := range tile.img.bitMap {
 		for _, bit := range line {
 			if bit == 0 {
-				//fmt.Print(" ")
+				fmt.Print(" ")
 			} else {
-				//fmt.Print("*")
+				fmt.Print("*")
 			}
 			//img, _ := ebiten.NewImage(1, 1, 0)
 			//c := colors[bit]
@@ -102,8 +123,9 @@ func (nes *NES) renderTile(x, y int, tile *Tile) {
 			//	panic(err)
 			//}
 		}
-		//fmt.Println()
+		fmt.Println()
 	}
+	fmt.Println()
 }
 
 type Register struct {
@@ -173,7 +195,9 @@ func (r *StatusRegister) Set(v int) {
 }
 
 func debug(args ...interface{}) {
-	pp.Println(args...)
+	if false {
+		pp.Println(args...)
+	}
 }
 
 func bool2int(v bool) int {

@@ -68,7 +68,9 @@ func (ppu *PPU) Run(cycle int) *BackGround {
 		if ppu.line == 262 {
 			ppu.line = 0
 			//debug(ppu.background)
-			return ppu.background
+			background := ppu.background
+			ppu.background = NewBackGround()
+			return background
 		}
 	}
 	return nil
