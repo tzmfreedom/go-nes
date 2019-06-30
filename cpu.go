@@ -2,7 +2,6 @@ package main
 
 import (
 	"math"
-	"os"
 )
 
 type Cpu struct {
@@ -76,10 +75,11 @@ func (cpu *Cpu) Run() int {
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
 	//debug(opCodeRaw)
-	//debug(opCode)
-	//debug(cpu.Register)
-	if opCode.Base == "BRK" {
-		os.Exit(0)
+	if opCode.Base != "JMP" && opCode.Operand != 32846 {
+		if opCode.Base == "STA" && opCode.Operand == 0x2007 {
+			debug(opCode)
+			debug(cpu.Register)
+		}
 	}
 	cpu.Execute(opCode)
 	return cycles[opCodeRaw]

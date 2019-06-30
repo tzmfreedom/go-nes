@@ -81,8 +81,8 @@ func (nes *NES) update(screen *ebiten.Image) error {
 	}
 
 	for {
-		nes.cycle += nes.cpu.Run()
-		background := nes.ppu.Run(nes.cycle * 3)
+		cycle := nes.cpu.Run()
+		background := nes.ppu.Run(cycle * 3)
 		if background != nil {
 			nes.background = background
 		}
@@ -240,7 +240,7 @@ func (r *StatusRegister) Set(v int) {
 }
 
 func debug(args ...interface{}) {
-	if false {
+	if true {
 		pp.Println(args...)
 	}
 }
