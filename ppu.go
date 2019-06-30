@@ -7,6 +7,7 @@ type PPU struct {
 	background *BackGround
 	sprites    []*Sprite
 	addr int
+	isWriteHigher bool
 }
 
 func NewPPU() *PPU {
@@ -42,10 +43,12 @@ func (ppu *PPU) Write(index, data int) {
 	case 0x0004:
 	case 0x0005:
 	case 0x0006:
-		if ppu.addr == 0 {
-			ppu.addr += data * 256
-		} else {
+		if ppu.isWriteHigher {
 			ppu.addr += data
+			ppu.isWriteHigher = false
+		} else {
+			ppu.addr = data * 256
+			ppu.isWriteHigher = true
 		}
 	case 0x0007:
 		debug("address", ppu.addr)

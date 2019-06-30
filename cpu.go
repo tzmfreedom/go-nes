@@ -39,7 +39,6 @@ func (cpu *Cpu) Read(index int) int {
 		return cpu.RAM[index]
 	}
 	if index < 0x2000 {
-		debug(index-0x800)
 		return cpu.RAM[index-0x800]
 	}
 	if index < 0x2008 {
@@ -197,11 +196,11 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 	case "BIT":
 		// TODO: impl
 	case "JMP":
-		cpu.Register.PC = cpu.Read(opCode.Operand)
+		cpu.Register.PC = opCode.Operand
 	case "JSR":
 		debug(opCode)
 		cpu.PushStack(cpu.Register.PC)
-		cpu.Register.PC = cpu.Read(opCode.Operand)
+		cpu.Register.PC = opCode.Operand
 	case "RTS":
 		cpu.Register.PC = cpu.PopStack()
 	case "BRK":
