@@ -79,13 +79,17 @@ func (nes *NES) update(screen *ebiten.Image) error {
 	if ebiten.IsDrawingSkipped() {
 		return nil
 	}
-	nes.cycle += nes.cpu.Run()
-	background := nes.ppu.Run(nes.cycle * 3)
-	if background != nil {
-		nes.renderEbiten(screen, background)
-		nes.background = background
-	} else if nes.background != nil {
-		nes.renderEbiten(screen, nes.background)
+
+	for {
+		nes.cycle += nes.cpu.Run()
+		background := nes.ppu.Run(nes.cycle * 3)
+		if background != nil {
+			nes.background = background
+		}
+		if nes.background != nil {
+			nes.renderEbiten(screen, nes.background)
+			break
+		}
 	}
 	return nil
 }
