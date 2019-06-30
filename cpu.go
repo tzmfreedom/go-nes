@@ -41,7 +41,7 @@ func (cpu *Cpu) Read(index int) int {
 		return cpu.RAM[index-0x800]
 	}
 	if index < 0x2008 {
-		return cpu.PPU.Read(index-0x2000)
+		return cpu.PPU.Read(index - 0x2000)
 	}
 	if index < 0x4000 {
 
@@ -95,7 +95,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A + data + bool2int(cpu.Register.P.Carry)
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		//cpu.Register.P.Overflow = r
 		cpu.Register.P.Zero = r == 0
 		//cpu.Register.P.Carry = r == 0
@@ -107,7 +107,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A - data + bool2int(!cpu.Register.P.Carry)
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		//cpu.Register.P.Overflow = r
 		cpu.Register.P.Zero = r == 0
 		//cpu.Register.P.Carry = r == 0
@@ -119,7 +119,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A & data
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "ORA":
@@ -129,36 +129,36 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A | data
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "EOR":
 		r := cpu.Register.A ^ data
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "ASL":
 		cpu.Register.A <<= 1
 		r := cpu.Register.A & int(math.Pow(2, 7))
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = r != 0
 	case "LSR":
 		cpu.Register.A >>= 1
 		r := cpu.Register.A & int(math.Pow(2, 0))
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = r != 0
 	case "ROL":
 		cpu.Register.A = cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
 		r := cpu.Register.A & int(math.Pow(2, 7))
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = r != 0
 	case "ROR":
 		cpu.Register.A = cpu.Register.A>>1 + bool2int(cpu.Register.P.Carry)*int(math.Pow(2, 7))
 		r := cpu.Register.A & int(math.Pow(2, 0))
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = r != 0
 	case "BCC":
@@ -208,20 +208,20 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		l := cpu.PopStack()
 		h := cpu.PopStack()
 		cpu.Register.P.Set(status)
-		cpu.Register.PC = h * 256 + l
+		cpu.Register.PC = h*256 + l
 	case "CMP":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		r := cpu.Register.A-data
+		r := cpu.Register.A - data
 		if r > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
 		}
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		// cpu.Register.P.Carry
 	case "CPX":
@@ -230,13 +230,13 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		r := cpu.Register.X-data
+		r := cpu.Register.X - data
 		if r > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
 		}
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		// cpu.Register.P.Carry
 	case "CPY":
@@ -245,40 +245,40 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		r := cpu.Register.Y-data
+		r := cpu.Register.Y - data
 		if r > 0 {
 			cpu.Register.P.Carry = true
 		} else {
 			cpu.Register.P.Carry = false
 		}
-		cpu.Register.P.Negative = r >> 6 == 1
+		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
 		// cpu.Register.P.Carry
 	case "INC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data+1)
-		cpu.Register.P.Negative = (data+1) >> 6 == 1
-		cpu.Register.P.Zero = data + 1 == 0
+		cpu.Register.P.Negative = (data+1)>>6 == 1
+		cpu.Register.P.Zero = data+1 == 0
 	case "DEC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data-1)
-		cpu.Register.P.Negative = (data-1) >> 6 == 1
-		cpu.Register.P.Zero = data - 1 == 0
+		cpu.Register.P.Negative = (data-1)>>6 == 1
+		cpu.Register.P.Zero = data-1 == 0
 	case "INX":
 		cpu.Register.X++
-		cpu.Register.P.Negative = cpu.Register.X >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "DEX":
 		cpu.Register.X--
-		cpu.Register.P.Negative = cpu.Register.X >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "INY":
 		cpu.Register.Y++
-		cpu.Register.P.Negative = cpu.Register.Y >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "DEY":
 		cpu.Register.Y--
-		cpu.Register.P.Negative = cpu.Register.Y >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "CLC":
 		cpu.Register.P.Carry = false
@@ -301,7 +301,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.A = data
-		cpu.Register.P.Negative = data >> 6 == 1
+		cpu.Register.P.Negative = data>>6 == 1
 		cpu.Register.P.Zero = data == 0
 	case "LDX":
 		if opCode.Mode == ADDR_IMMEDIATE {
@@ -310,7 +310,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.X = data
-		cpu.Register.P.Negative = data >> 6 == 1
+		cpu.Register.P.Negative = data>>6 == 1
 		cpu.Register.P.Zero = data == 0
 	case "LDY":
 		if opCode.Mode == ADDR_IMMEDIATE {
@@ -319,7 +319,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.Y = data
-		cpu.Register.P.Negative = data >> 6 == 1
+		cpu.Register.P.Negative = data>>6 == 1
 		cpu.Register.P.Zero = data == 0
 	case "STA":
 		cpu.Write(opCode.Operand, cpu.Register.A)
@@ -329,23 +329,23 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Write(opCode.Operand, cpu.Register.Y)
 	case "TAX":
 		cpu.Register.X = cpu.Register.A
-		cpu.Register.P.Negative = cpu.Register.A >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TXA":
 		cpu.Register.A = cpu.Register.X
-		cpu.Register.P.Negative = cpu.Register.X >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "TAY":
 		cpu.Register.Y = cpu.Register.A
-		cpu.Register.P.Negative = cpu.Register.A >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TYA":
 		cpu.Register.A = cpu.Register.Y
-		cpu.Register.P.Negative = cpu.Register.Y >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "TSX":
 		cpu.Register.X = cpu.Register.SP
-		cpu.Register.P.Negative = cpu.Register.SP >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.SP>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.SP == 0
 	case "TXS":
 		cpu.Register.SP = cpu.Register.X
@@ -353,7 +353,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.PushStack(cpu.Register.A)
 	case "PLA":
 		cpu.Register.A = cpu.PopStack()
-		cpu.Register.P.Negative = cpu.Register.A >> 6 == 1
+		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "PHP":
 		cpu.PushStack(cpu.Register.P.Int())

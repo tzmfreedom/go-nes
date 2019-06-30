@@ -685,11 +685,11 @@ func (opCode *OpCode) FetchOperand(cpu *Cpu) {
 	case ADDR_ABSX:
 		l := cpu.Fetch()
 		h := cpu.Fetch()
-		opCode.Operand = l + h * 256 + cpu.Register.X
+		opCode.Operand = l + h*256 + cpu.Register.X
 	case ADDR_ABSY:
 		l := cpu.Fetch()
 		h := cpu.Fetch()
-		opCode.Operand = l + h * 256 + cpu.Register.Y
+		opCode.Operand = l + h*256 + cpu.Register.Y
 	case ADDR_REL:
 		rel := cpu.Fetch()
 		if rel < 0x7F {

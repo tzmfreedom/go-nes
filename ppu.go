@@ -1,18 +1,18 @@
 package main
 
 type PPU struct {
-	RAM        []int
-	cycle      int
-	line       int
-	background *BackGround
-	sprites    []*Sprite
-	addr int
+	RAM           []int
+	cycle         int
+	line          int
+	background    *BackGround
+	sprites       []*Sprite
+	addr          int
 	isWriteHigher bool
 }
 
 func NewPPU() *PPU {
 	return &PPU{
-		RAM: make([]int, 0x4000),
+		RAM:        make([]int, 0x4000),
 		background: NewBackGround(),
 	}
 }
@@ -76,7 +76,7 @@ func (ppu *PPU) Run(cycle int) *BackGround {
 }
 
 func (ppu *PPU) BuildBackGround() {
-	y := (ppu.line-1)/ 8
+	y := (ppu.line - 1) / 8
 	for x := 0; x < 32; x++ {
 		tile := ppu.BuildTile(x, y)
 		ppu.background.Add(x, y, tile)
@@ -126,4 +126,3 @@ type RGB struct {
 	G uint8
 	B uint8
 }
-

@@ -45,9 +45,8 @@ func main() {
 	cpu.PPU = ppu
 	cpu.Reset()
 	nes := &NES{
-		cpu:   cpu,
-		ppu:   ppu,
-		cycle: 0,
+		cpu: cpu,
+		ppu: ppu,
 	}
 	//nes.Run()
 	if err := ebiten.Run(nes.update, 256, 240, 1, "sample"); err != nil {
@@ -60,20 +59,8 @@ func main() {
 type NES struct {
 	cpu        *Cpu
 	ppu        *PPU
-	cycle      int
 	background *BackGround
 }
-
-func (nes *NES) Run() {
-	for {
-		nes.cycle += nes.cpu.Run()
-		background := nes.ppu.Run(nes.cycle * 3)
-		if background != nil {
-			nes.render(background)
-		}
-	}
-}
-
 
 func (nes *NES) update(screen *ebiten.Image) error {
 	if ebiten.IsDrawingSkipped() {
@@ -112,19 +99,6 @@ func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround) {
 	}
 }
 
-
-func (nes *NES) render_(background *BackGround) {
-	//fmt.Print("\033[2J")
-	//fmt.Print("\r")
-	//fmt.Print("\033[;H")
-	for i, line := range background.tiles {
-		for j, tile := range line {
-			nes.renderTile(j, i, tile)
-		}
-	}
-	os.Exit(0)
-}
-
 func (nes *NES) render(background *BackGround) {
 	fmt.Print("\033[2J")
 	fmt.Print("\r")
@@ -147,32 +121,6 @@ func (nes *NES) render(background *BackGround) {
 	os.Exit(0)
 }
 
-func (nes *NES) renderTile(x, y int, tile *Tile) {
-	for _, line := range tile.img.bitMap {
-		for _, bit := range line {
-			if bit == 0 {
-				fmt.Print(" ")
-			} else {
-				fmt.Print("*")
-			}
-			//img, _ := ebiten.NewImage(1, 1, 0)
-			//c := colors[bit]
-			//err := img.Fill(color.RGBA{c.R, c.G, c.B, 0xff})
-			//if err != nil {
-			//	panic(err)
-			//}
-			//options := &ebiten.DrawImageOptions{}
-			//options.GeoM.Translate(float64(x*SpriteSize+j), float64(y*SpriteSize+i))
-			//err = screen.DrawImage(img, options)
-			//if err != nil {
-			//	panic(err)
-			//}
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
-
 type Register struct {
 	A  int
 	X  int
@@ -181,7 +129,6 @@ type Register struct {
 	SP int
 	PC int
 }
-
 
 type BackGround struct {
 	tiles [][]*Tile
@@ -229,14 +176,14 @@ func (r *StatusRegister) Int() int {
 }
 
 func (r *StatusRegister) Set(v int) {
-	r.Negative  = int(math.Pow(2, 7)) != 0
-	r.Overflow  = int(math.Pow(2, 6)) != 0
-	r.Reserved  = int(math.Pow(2, 5)) != 0
-	r.Break     = int(math.Pow(2, 4)) != 0
-	r.Decimal   = int(math.Pow(2, 3)) != 0
+	r.Negative = int(math.Pow(2, 7)) != 0
+	r.Overflow = int(math.Pow(2, 6)) != 0
+	r.Reserved = int(math.Pow(2, 5)) != 0
+	r.Break = int(math.Pow(2, 4)) != 0
+	r.Decimal = int(math.Pow(2, 3)) != 0
 	r.Interrupt = int(math.Pow(2, 2)) != 0
-	r.Zero      = int(math.Pow(2, 1)) != 0
-	r.Carry     = int(math.Pow(2, 0)) != 0
+	r.Zero = int(math.Pow(2, 1)) != 0
+	r.Carry = int(math.Pow(2, 0)) != 0
 }
 
 func debug(args ...interface{}) {
