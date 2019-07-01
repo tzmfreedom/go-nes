@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"math"
+	"os"
 )
 
 type Cpu struct {
@@ -59,8 +61,14 @@ func (cpu *Cpu) Read(index int) int {
 }
 
 func (cpu *Cpu) Reset() {
-	f := cpu.Read(0xFFFC)
-	s := cpu.Read(0xFFFD)
+	var f, s int
+	if len(cpu.PrgROM) == 0x4000 {
+		f = cpu.Read(0xBFFC)
+		s = cpu.Read(0xBFFD)
+	} else {
+		f = cpu.Read(0xFFFC)
+		s = cpu.Read(0xFFFD)
+	}
 	cpu.Register.PC = s*256 + f
 }
 
@@ -74,12 +82,12 @@ func (cpu *Cpu) Run() int {
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
-	//debug(opCodeRaw)
-	if opCode.Base != "JMP" && opCode.Operand != 32846 {
-		if opCode.Base == "STA" && opCode.Operand == 0x2007 {
-			debug(opCode)
-			debug(cpu.Register)
-		}
+	if 0x8000 + 6 < cpu.Register.PC {
+		debug(cpu.Register.PC)
+		debug(opCode)
+		debug(cpu.Register)
+		reader := bufio.NewReader(os.Stdin)
+		reader.ReadString('\n')
 	}
 	cpu.Execute(opCode)
 	return cycles[opCodeRaw]
@@ -301,7 +309,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.A = data
-		cpu.Register.P.Negative = data>>6 == 1
+		cpu.Register.P.Negative = data>>7 == 1
 		cpu.Register.P.Zero = data == 0
 	case "LDX":
 		if opCode.Mode == ADDR_IMMEDIATE {

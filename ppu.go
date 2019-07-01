@@ -8,6 +8,13 @@ type PPU struct {
 	sprites       []*Sprite
 	addr          int
 	isWriteHigher bool
+	controlRegister int
+	controlRegister2 int
+	statusRegister int
+	spriteMemAddr int
+	isWriteScrollV bool
+	scrollH int
+	scrollV int
 }
 
 func NewPPU() *PPU {
@@ -20,12 +27,20 @@ func NewPPU() *PPU {
 func (ppu *PPU) Read(index int) int {
 	switch index {
 	case 0x0000:
+		// no action
 	case 0x0001:
+		// no action
 	case 0x0002:
+		debug(ppu.statusRegister >> 7)
+		return ppu.statusRegister
 	case 0x0003:
+		// no action
 	case 0x0004:
+		// no action
 	case 0x0005:
+		// no action
 	case 0x0006:
+		// no action
 	case 0x0007:
 		data := ppu.RAM[ppu.addr]
 		ppu.addr += 0x01
@@ -37,11 +52,24 @@ func (ppu *PPU) Read(index int) int {
 func (ppu *PPU) Write(index, data int) {
 	switch index {
 	case 0x0000:
+		ppu.controlRegister = data
 	case 0x0001:
+		ppu.controlRegister2 = data
 	case 0x0002:
+		// no action
 	case 0x0003:
+		ppu.spriteMemAddr = index
 	case 0x0004:
+		ppu.RAM[ppu.spriteMemAddr] = index
+		ppu.spriteMemAddr += 0x01
 	case 0x0005:
+		if ppu.isWriteScrollV {
+			ppu.scrollH = data
+			ppu.isWriteScrollV = false
+		} else {
+			ppu.scrollV = data
+			ppu.isWriteScrollV = true
+		}
 	case 0x0006:
 		if ppu.isWriteHigher {
 			ppu.addr += data
@@ -51,7 +79,6 @@ func (ppu *PPU) Write(index, data int) {
 			ppu.isWriteHigher = true
 		}
 	case 0x0007:
-		debug("address", ppu.addr)
 		ppu.RAM[ppu.addr] = data
 		ppu.addr += 0x01 // TODO: impl
 	}
@@ -65,8 +92,12 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet) {
 		if ppu.line < 240 && (ppu.line-1)%8 == 0 {
 			ppu.BuildBackGround()
 		}
+		if ppu.line == 241 {
+			ppu.statusRegister |= 0x80
+		}
 		if ppu.line == 262 {
 			ppu.line = 0
+			ppu.statusRegister &= 0x7F
 			background := ppu.background
 			ppu.background = NewBackGround()
 			return background, ppu.getPallet()
