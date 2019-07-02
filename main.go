@@ -41,12 +41,12 @@ func main() {
 		index := i * 16
 		sprites[i] = NewSprite(chrRom[index : index+16])
 	}
-	ppu.sprites = sprites
 	cpu.PPU = ppu
 	cpu.Reset()
 	nes := &NES{
 		cpu: cpu,
 		ppu: ppu,
+		sprites: sprites,
 	}
 	if err := ebiten.Run(nes.update, 256, 240, 2, "sample"); err != nil {
 		log.Fatal(err)
@@ -58,6 +58,8 @@ type NES struct {
 	ppu        *PPU
 	background *BackGround
 	pallet     *Pallet
+	sprites    []*Sprite
+	spritesData []*SpriteData
 }
 
 func (nes *NES) update(screen *ebiten.Image) error {
@@ -67,23 +69,25 @@ func (nes *NES) update(screen *ebiten.Image) error {
 
 	for {
 		cycle := nes.cpu.Run()
-		background, pallet := nes.ppu.Run(cycle * 3)
+		background, pallet, sprites := nes.ppu.Run(cycle * 3)
 		if background != nil {
 			nes.background = background
 			nes.pallet = pallet
+			nes.spritesData = sprites
 		}
 		if nes.background != nil {
-			nes.renderEbiten(screen, nes.background, nes.pallet)
+			nes.renderEbiten(screen, nes.background, nes.pallet, nes.spritesData)
 			break
 		}
 	}
 	return nil
 }
 
-func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, pallet *Pallet) {
+func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, pallet *Pallet, sprites []*SpriteData) {
 	for i, line := range background.tiles {
 		for j, tile := range line {
-			for y, line := range tile.img.bitMap {
+			sprite := nes.sprites[tile.spriteId]
+			for y, line := range sprite.bitMap {
 				for x, bit := range line {
 					if bit != 0 {
 						img, _ := ebiten.NewImage(1, 1, 0)
@@ -93,6 +97,31 @@ func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, palle
 						options.GeoM.Translate(float64(j*SpriteSize+x), float64(i*SpriteSize+y))
 						screen.DrawImage(img, options)
 					}
+				}
+			}
+		}
+	}
+
+	for _, sprite := range sprites	{
+		s := nes.sprites[256+sprite.spriteId]
+		if sprite.y > 1 {
+			debug(s)
+			debug(sprite)
+			os.Exit(0)
+		}
+		//isVerticalReverse := sprite.attr & 0x80
+		//isHoriozntalReverse := sprite.attr & 0x40
+		//isPriority := sprite.attr & 0x20
+		palletId := sprite.attr & 0x03
+		for y, line := range s.bitMap {
+			for x, bit := range line {
+				if bit != 0 {
+					img, _ := ebiten.NewImage(1, 1, 0)
+					c := pallet.getColor(palletId, bit)
+					img.Fill(color.RGBA{c.R, c.G, c.B, 0xff})
+					options := &ebiten.DrawImageOptions{}
+					options.GeoM.Translate(float64(sprite.x+x), float64(sprite.y+y))
+					screen.DrawImage(img, options)
 				}
 			}
 		}
@@ -127,7 +156,7 @@ func NewBackGround() *BackGround {
 }
 
 type Tile struct {
-	img      *Sprite
+	spriteId int
 	palletId int
 }
 

@@ -31,7 +31,11 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x8000 {
 
 	} else {
-		cpu.PrgROM[index-0x8000] = byte(value)
+		if len(cpu.PrgROM) == 0x8000 {
+			cpu.PrgROM[index-0x8000] = byte(value)
+		} else {
+			cpu.PrgROM[index-0xC000] = byte(value)
+		}
 	}
 }
 
@@ -56,6 +60,12 @@ func (cpu *Cpu) Read(index int) int {
 	}
 	if index < 0x8000 {
 
+	}
+	if index >= 0xC000 {
+		if len(cpu.PrgROM) == 0x8000 {
+			return int(cpu.PrgROM[index-0x8000])
+		}
+		return int(cpu.PrgROM[index-0xC000])
 	}
 	return int(cpu.PrgROM[index-0x8000])
 }
@@ -82,7 +92,7 @@ func (cpu *Cpu) Run() int {
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
-	if 0x8000 + 6 < cpu.Register.PC {
+	if false && 0x8000 + 6 < cpu.Register.PC {
 		debug(cpu.Register.PC)
 		debug(opCode)
 		debug(cpu.Register)

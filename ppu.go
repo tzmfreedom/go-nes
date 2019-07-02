@@ -1,11 +1,13 @@
 package main
 
+
 type PPU struct {
 	RAM           []int
 	cycle         int
 	line          int
 	background    *BackGround
-	sprites       []*Sprite
+	spriteRAM     []int
+	sprites       []*SpriteData
 	addr          int
 	isWriteHigher bool
 	controlRegister int
@@ -21,6 +23,7 @@ func NewPPU() *PPU {
 	return &PPU{
 		RAM:        make([]int, 0x4000),
 		background: NewBackGround(),
+		spriteRAM:  make([]int, 0x100),
 	}
 }
 
@@ -31,7 +34,6 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0001:
 		// no action
 	case 0x0002:
-		debug(ppu.statusRegister >> 7)
 		return ppu.statusRegister
 	case 0x0003:
 		// no action
@@ -58,9 +60,9 @@ func (ppu *PPU) Write(index, data int) {
 	case 0x0002:
 		// no action
 	case 0x0003:
-		ppu.spriteMemAddr = index
+		ppu.spriteMemAddr = data
 	case 0x0004:
-		ppu.RAM[ppu.spriteMemAddr] = index
+		ppu.spriteRAM[ppu.spriteMemAddr] = data
 		ppu.spriteMemAddr += 0x01
 	case 0x0005:
 		if ppu.isWriteScrollV {
@@ -84,8 +86,11 @@ func (ppu *PPU) Write(index, data int) {
 	}
 }
 
-func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet) {
+func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
 	ppu.cycle += cycle
+	if ppu.line == 0 {
+		ppu.buildSprites()
+	}
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
@@ -100,10 +105,26 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet) {
 			ppu.statusRegister &= 0x7F
 			background := ppu.background
 			ppu.background = NewBackGround()
-			return background, ppu.getPallet()
+			return background, ppu.getPallet(), ppu.sprites
 		}
 	}
-	return nil, nil
+	return nil, nil, nil
+}
+
+func (ppu *PPU) buildSprites() {
+	ppu.sprites = []*SpriteData{}
+	for i := 0; i < 0xff; i+=4 {
+		y := ppu.spriteRAM[i]+1
+		spriteId := ppu.spriteRAM[i+1]
+		attr := ppu.spriteRAM[i+2]
+		x := ppu.spriteRAM[i+3]
+		ppu.sprites = append(ppu.sprites, &SpriteData{
+			spriteId: spriteId,
+			attr: attr,
+			x: x,
+			y: y,
+		})
+	}
 }
 
 func (ppu *PPU) BuildBackGround() {
@@ -120,9 +141,9 @@ func (ppu *PPU) getPallet() *Pallet {
 
 func (ppu *PPU) BuildTile(x, y int) *Tile {
 	palletId := ppu.getPalletId(x, y)
-	sprite := ppu.getSprite(x, y)
+	spriteId := ppu.getSpriteId(x, y)
 	return &Tile{
-		img:      sprite,
+		spriteId: spriteId,
 		palletId: palletId,
 	}
 }
@@ -151,9 +172,8 @@ func (ppu *PPU) getPalletId(x, y int) int {
 	return (palletBlock >> (blockId * 2)) & 3
 }
 
-func (ppu *PPU) getSprite(x, y int) *Sprite {
-	spriteId := ppu.RAM[x+y*32+0x2000]
-	return ppu.sprites[spriteId]
+func (ppu *PPU) getSpriteId(x, y int) int {
+	return ppu.RAM[x+y*32+0x2000]
 }
 
 type RGB struct {
@@ -174,4 +194,10 @@ func NewPallet(src []int) *Pallet {
 
 func (p *Pallet) getColor(palletId int, bit int) *RGB {
 	return colors[p.src[palletId*4+bit]]
+}
+
+type SpriteData struct {
+	x, y int
+	spriteId int
+	attr int
 }
