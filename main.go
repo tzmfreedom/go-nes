@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/hajimehoshi/ebiten"
 	"github.com/k0kubun/pp"
-	"image/color"
+	"github.com/veandco/go-sdl2/sdl"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
+	"time"
 )
 
 func main() {
+
 	filename := os.Args[1]
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -43,14 +43,9 @@ func main() {
 	}
 	cpu.PPU = ppu
 	cpu.Reset()
-	nes := &NES{
-		cpu: cpu,
-		ppu: ppu,
-		sprites: sprites,
-	}
-	if err := ebiten.Run(nes.update, 256, 240, 2, "sample"); err != nil {
-		log.Fatal(err)
-	}
+	nes := NewNES(cpu, ppu, sprites)
+	nes.run()
+	defer nes.close()
 }
 
 type NES struct {
@@ -60,43 +55,64 @@ type NES struct {
 	pallet     *Pallet
 	sprites    []*Sprite
 	spritesData []*SpriteData
+	renderer   *sdl.Renderer
+	window     *sdl.Window
+	frame      int
+	time       int64
 }
 
-func (nes *NES) update(screen *ebiten.Image) error {
-	if ebiten.IsDrawingSkipped() {
-		return nil
+func NewNES(cpu *Cpu, ppu *PPU, sprites []*Sprite) *NES {
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+		panic(err)
+	}
+	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		256, 240, sdl.WINDOW_SHOWN | sdl.WINDOW_RESIZABLE)
+	if err != nil {
+		panic(err)
+	}
+	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	if err != nil {
+		panic(err)
 	}
 
+	renderer.Clear()
+	sdl.PollEvent()
+
+	return &NES{
+		cpu: cpu,
+		ppu: ppu,
+		sprites: sprites,
+		renderer: renderer,
+		window: window,
+	}
+}
+
+func (nes *NES) close() {
+	nes.renderer.Destroy()
+	nes.window.Destroy()
+	sdl.Quit()
+}
+
+func (nes *NES) run() error {
 	for {
 		cycle := nes.cpu.Run()
 		background, pallet, sprites := nes.ppu.Run(cycle * 3)
 		if background != nil {
-			nes.background = background
-			nes.pallet = pallet
-			nes.spritesData = sprites
-		}
-		if nes.background != nil {
-			nes.renderEbiten(screen, nes.background, nes.pallet, nes.spritesData)
-			break
+			nes.render(background, pallet, sprites)
 		}
 	}
 	return nil
 }
 
-func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, pallet *Pallet, sprites []*SpriteData) {
+func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*SpriteData) {
 	for i, line := range background.tiles {
 		for j, tile := range line {
 			sprite := nes.sprites[tile.spriteId]
 			for y, line := range sprite.bitMap {
 				for x, bit := range line {
-					if bit != 0 {
-						img, _ := ebiten.NewImage(1, 1, 0)
-						c := pallet.getColor(tile.palletId, bit)
-						img.Fill(color.RGBA{c.R, c.G, c.B, 0xff})
-						options := &ebiten.DrawImageOptions{}
-						options.GeoM.Translate(float64(j*SpriteSize+x), float64(i*SpriteSize+y))
-						screen.DrawImage(img, options)
-					}
+					c := pallet.getBackgroundColor(tile.palletId, bit)
+					nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+					nes.renderer.DrawPoint(int32(j*SpriteSize+x), int32(i*SpriteSize+y))
 				}
 			}
 		}
@@ -104,28 +120,28 @@ func (nes *NES) renderEbiten(screen *ebiten.Image, background *BackGround, palle
 
 	for _, sprite := range sprites	{
 		s := nes.sprites[256+sprite.spriteId]
-		if sprite.y > 1 {
-			debug(s)
-			debug(sprite)
-			os.Exit(0)
-		}
 		//isVerticalReverse := sprite.attr & 0x80
 		//isHoriozntalReverse := sprite.attr & 0x40
 		//isPriority := sprite.attr & 0x20
 		palletId := sprite.attr & 0x03
 		for y, line := range s.bitMap {
 			for x, bit := range line {
-				if bit != 0 {
-					img, _ := ebiten.NewImage(1, 1, 0)
-					c := pallet.getColor(palletId, bit)
-					img.Fill(color.RGBA{c.R, c.G, c.B, 0xff})
-					options := &ebiten.DrawImageOptions{}
-					options.GeoM.Translate(float64(sprite.x+x), float64(sprite.y+y))
-					screen.DrawImage(img, options)
-				}
+				c := pallet.getSpriteColor(palletId, bit)
+				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+				nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
 			}
 		}
 	}
+	nes.frame++
+	if nes.frame == 60 {
+		nes.frame -= 60
+		if nes.time > 0 {
+			debug((time.Now().UnixNano() - nes.time)/1000000000)
+			debug(60*1000000000/(time.Now().UnixNano() - nes.time))
+		}
+		nes.time = time.Now().UnixNano()
+	}
+	nes.renderer.Present()
 }
 
 type Register struct {
@@ -197,6 +213,10 @@ func debug(args ...interface{}) {
 	if true {
 		pp.Println(args...)
 	}
+}
+
+func exit() {
+	os.Exit(1)
 }
 
 func bool2int(v bool) int {

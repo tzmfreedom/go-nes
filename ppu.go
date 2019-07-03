@@ -136,7 +136,7 @@ func (ppu *PPU) BuildBackGround() {
 }
 
 func (ppu *PPU) getPallet() *Pallet {
-	return NewPallet(ppu.RAM[0x3F00:0x3F10])
+	return NewPallet(ppu.RAM[0x3F00:0x3F20])
 }
 
 func (ppu *PPU) BuildTile(x, y int) *Tile {
@@ -192,8 +192,12 @@ func NewPallet(src []int) *Pallet {
 	}
 }
 
-func (p *Pallet) getColor(palletId int, bit int) *RGB {
+func (p *Pallet) getBackgroundColor(palletId int, bit int) *RGB {
 	return colors[p.src[palletId*4+bit]]
+}
+
+func (p *Pallet) getSpriteColor(palletId int, bit int) *RGB {
+	return colors[p.src[0x10+palletId*4+bit]]
 }
 
 type SpriteData struct {
