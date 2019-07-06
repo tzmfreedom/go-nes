@@ -13,6 +13,25 @@ type Cpu struct {
 	Register *Register
 	PrgROM   []byte
 	ChrROM   []byte
+	GamePad  *GamePad
+	GamePadIndex int
+	interrupts *Interrupts
+}
+
+func NewCpu(prgRom []byte) *Cpu {
+	interrupts := &Interrupts{}
+	cpu := &Cpu{
+		RAM: make([]int, 0x0800),
+		Register: &Register{
+			P: &StatusRegister{},
+		},
+		PrgROM: prgRom,
+		GamePad: &GamePad{},
+		PPU: NewPPU(interrupts),
+		interrupts: interrupts,
+	}
+	cpu.Reset()
+	return cpu
 }
 
 func (cpu *Cpu) Write(index int, value int) {
@@ -24,6 +43,23 @@ func (cpu *Cpu) Write(index int, value int) {
 		cpu.PPU.Write(index-0x2000, value)
 	} else if index < 0x4000 {
 
+	} else if index == 0x4014 {
+		// sprite DMA transfer
+		addr := value << 8
+		for i := 0; i < 0xFF; i+=4 {
+			base := i+addr
+			cpu.PPU.spriteRAM[i]   = cpu.RAM[base]
+			cpu.PPU.spriteRAM[i+1] = cpu.RAM[base+1]
+			cpu.PPU.spriteRAM[i+2] = cpu.RAM[base+2]
+			cpu.PPU.spriteRAM[i+3] = cpu.RAM[base+3]
+		}
+	} else if index == 0x4016 {
+		// key input
+		// TODO: impl
+		if value == 0 {
+			cpu.GamePadIndex = 0
+			cpu.GamePad.Reset()
+		}
 	} else if index < 0x4020 {
 
 	} else if index < 0x6000 {
@@ -52,6 +88,34 @@ func (cpu *Cpu) Read(index int) int {
 	if index < 0x4000 {
 
 	}
+	if index == 0x4016 {
+		// key input
+		var result int
+		switch cpu.GamePadIndex {
+		case 0:
+			result = bool2int(cpu.GamePad.A)
+		case 1:
+			result = bool2int(cpu.GamePad.B)
+		case 2:
+			result = bool2int(cpu.GamePad.Select)
+		case 3:
+			result = bool2int(cpu.GamePad.Start)
+		case 4:
+			result = bool2int(cpu.GamePad.Up)
+		case 5:
+			result = bool2int(cpu.GamePad.Down)
+		case 6:
+			result = bool2int(cpu.GamePad.Left)
+		case 7:
+			result = bool2int(cpu.GamePad.Right)
+		}
+		if cpu.GamePadIndex == 7 {
+			cpu.GamePadIndex = 0
+		} else {
+			cpu.GamePadIndex++
+		}
+		return result
+	}
 	if index < 0x4020 {
 
 	}
@@ -72,6 +136,7 @@ func (cpu *Cpu) Read(index int) int {
 
 func (cpu *Cpu) Reset() {
 	var f, s int
+	// TODO: impl
 	if len(cpu.PrgROM) == 0x4000 {
 		f = cpu.Read(0xBFFC)
 		s = cpu.Read(0xBFFD)
@@ -82,17 +147,57 @@ func (cpu *Cpu) Reset() {
 	cpu.Register.PC = s*256 + f
 }
 
+func (cpu *Cpu) ProcessNMI() {
+	var f, s int
+	// TODO: impl
+	if len(cpu.PrgROM) == 0x4000 {
+		f = cpu.Read(0xBFFA)
+		s = cpu.Read(0xBFFB)
+	} else {
+		f = cpu.Read(0xFFFA)
+		s = cpu.Read(0xFFFB)
+	}
+	cpu.PushStack((cpu.Register.PC >> 8) & 0xff)
+	cpu.PushStack(cpu.Register.PC & 0xff)
+	cpu.PushStack(cpu.Register.P.Int())
+	cpu.Register.P.Interrupt = true
+	cpu.interrupts.Nmi = false
+	cpu.Register.PC = s*256 + f
+}
+
+func (cpu *Cpu) ProcessIrq() {
+	var f, s int
+	// TODO: impl
+	if len(cpu.PrgROM) == 0x4000 {
+		f = cpu.Read(0xBFFE)
+		s = cpu.Read(0xBFFF)
+	} else {
+		f = cpu.Read(0xFFFE)
+		s = cpu.Read(0xFFFF)
+	}
+	cpu.Register.P.Break = false
+	cpu.Register.P.Interrupt = true
+	cpu.Register.PC = s*256 + f
+}
+
 func (cpu *Cpu) Fetch() int {
 	ret := cpu.Read(cpu.Register.PC)
 	cpu.Register.PC++
 	return ret
 }
 
+var dbg bool
+
 func (cpu *Cpu) Run() int {
+	if cpu.interrupts.Nmi {
+		cpu.ProcessNMI()
+	}
+
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
-	if false && 0x8000 + 6 < cpu.Register.PC {
+	if false {
+		dbg = true
 		debug(cpu.Register.PC)
 		debug(opCode)
 		debug(cpu.Register)
@@ -383,11 +488,11 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 }
 
 func (cpu *Cpu) PushStack(value int) {
-	cpu.RAM[cpu.Register.SP] = value
+	cpu.RAM[0x100+cpu.Register.SP] = value
 	cpu.Register.SP++
 }
 
 func (cpu *Cpu) PopStack() int {
 	cpu.Register.SP--
-	return cpu.RAM[cpu.Register.SP]
+	return cpu.RAM[0x100+cpu.Register.SP]
 }

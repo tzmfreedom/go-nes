@@ -1,6 +1,5 @@
 package main
 
-
 type PPU struct {
 	RAM           []int
 	cycle         int
@@ -17,13 +16,15 @@ type PPU struct {
 	isWriteScrollV bool
 	scrollH int
 	scrollV int
+	interrupts *Interrupts
 }
 
-func NewPPU() *PPU {
+func NewPPU(interrupts *Interrupts) *PPU {
 	return &PPU{
 		RAM:        make([]int, 0x4000),
 		background: NewBackGround(),
 		spriteRAM:  make([]int, 0x100),
+		interrupts: interrupts,
 	}
 }
 
@@ -99,6 +100,9 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
 		}
 		if ppu.line == 241 {
 			ppu.statusRegister |= 0x80
+			if ppu.controlRegister & 0x80 != 0 {
+				ppu.interrupts.Nmi = true
+			}
 		}
 		if ppu.line == 262 {
 			ppu.line = 0
