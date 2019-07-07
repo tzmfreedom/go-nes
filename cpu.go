@@ -130,6 +130,9 @@ func (cpu *Cpu) Read(index int) int {
 	}
 	if index >= 0xC000 {
 		if len(cpu.PrgROM) == 0x8000 {
+			if current != nil && current.Base != "BRK" {
+				debug(current)
+			}
 			return int(cpu.PrgROM[index-0x8000])
 		}
 		return int(cpu.PrgROM[index-0xC000])
@@ -190,6 +193,7 @@ func (cpu *Cpu) Fetch() int {
 }
 
 var dbg bool
+var current *OpCode
 
 func (cpu *Cpu) Run() int {
 	if cpu.interrupts.Nmi {
@@ -199,13 +203,23 @@ func (cpu *Cpu) Run() int {
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
-	if false {
+	current = opCode
+	//if false {
+	if false || dbg || opCode.Base == "BIT" {
 		dbg = true
 		debug(cpu.Register.PC)
+		debug(opCodeRaw)
 		debug(opCode)
 		debug(cpu.Register)
 		reader := bufio.NewReader(os.Stdin)
-		reader.ReadString('\n')
+		cmd, _ := reader.ReadString('\n')
+		if cmd == "s\n" {
+			debug(cpu.Read(cpu.Register.PC))
+			debug(cpu.Read(cpu.Register.PC+1))
+			debug(cpu.Read(cpu.Register.PC+2))
+			debug(cpu.Read(cpu.Register.PC+3))
+			debug(cpu.Read(cpu.Register.PC+4))
+		}
 	}
 	cpu.Execute(opCode)
 	return cycles[opCodeRaw]
@@ -383,28 +397,28 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 	case "INC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data+1)
-		cpu.Register.P.Negative = (data+1)>>6 == 1
+		cpu.Register.P.Negative = (data+1)&0x80 == 1
 		cpu.Register.P.Zero = data+1 == 0
 	case "DEC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data-1)
-		cpu.Register.P.Negative = (data-1)>>6 == 1
+		cpu.Register.P.Negative = (data-1)&0x80 == 1
 		cpu.Register.P.Zero = data-1 == 0
 	case "INX":
-		cpu.Register.X++
-		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
+		cpu.Register.X = (cpu.Register.X+1)&0xFF
+		cpu.Register.P.Negative = cpu.Register.X&0x80 == 1
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "DEX":
-		cpu.Register.X--
-		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
+		cpu.Register.X = (cpu.Register.X-1)&0xFF
+		cpu.Register.P.Negative = cpu.Register.X&0x80 == 1
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "INY":
-		cpu.Register.Y++
-		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
+		cpu.Register.Y = (cpu.Register.Y+1)&0xFF
+		cpu.Register.P.Negative = cpu.Register.Y&0x80 == 1
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "DEY":
-		cpu.Register.Y--
-		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
+		cpu.Register.Y = (cpu.Register.Y-1)&0xFF
+		cpu.Register.P.Negative = cpu.Register.Y&0x80 == 1
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "CLC":
 		cpu.Register.P.Carry = false
@@ -474,7 +488,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Negative = cpu.Register.SP>>6 == 1
 		cpu.Register.P.Zero = cpu.Register.SP == 0
 	case "TXS":
-		cpu.Register.SP = cpu.Register.X
+		cpu.Register.SP = cpu.Register.X + 0x100
 	case "PHA":
 		cpu.PushStack(cpu.Register.A)
 	case "PLA":
@@ -492,10 +506,10 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 
 func (cpu *Cpu) PushStack(value int) {
 	cpu.RAM[0x100+cpu.Register.SP] = value
-	cpu.Register.SP++
+	cpu.Register.SP--
 }
 
 func (cpu *Cpu) PopStack() int {
-	cpu.Register.SP--
+	cpu.Register.SP++
 	return cpu.RAM[0x100+cpu.Register.SP]
 }
