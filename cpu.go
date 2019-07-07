@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"github.com/veandco/go-sdl2/sdl"
 	"math"
 	"os"
 )
@@ -90,24 +91,26 @@ func (cpu *Cpu) Read(index int) int {
 	}
 	if index == 0x4016 {
 		// key input
+		sdl.PumpEvents()
+		states := sdl.GetKeyboardState()
 		var result int
 		switch cpu.GamePadIndex {
 		case 0:
-			result = bool2int(cpu.GamePad.A)
+			result = bool2int(states[sdl.SCANCODE_Z] == 1)
 		case 1:
-			result = bool2int(cpu.GamePad.B)
+			result = bool2int(states[sdl.SCANCODE_X] == 1)
 		case 2:
-			result = bool2int(cpu.GamePad.Select)
+			result = bool2int(states[sdl.SCANCODE_S] == 1)
 		case 3:
-			result = bool2int(cpu.GamePad.Start)
+			result = bool2int(states[sdl.SCANCODE_D] == 1)
 		case 4:
-			result = bool2int(cpu.GamePad.Up)
+			result = bool2int(states[sdl.SCANCODE_UP] == 1)
 		case 5:
-			result = bool2int(cpu.GamePad.Down)
+			result = bool2int(states[sdl.SCANCODE_DOWN] == 1)
 		case 6:
-			result = bool2int(cpu.GamePad.Left)
+			result = bool2int(states[sdl.SCANCODE_LEFT] == 1)
 		case 7:
-			result = bool2int(cpu.GamePad.Right)
+			result = bool2int(states[sdl.SCANCODE_RIGHT] == 1)
 		}
 		if cpu.GamePadIndex == 7 {
 			cpu.GamePadIndex = 0
@@ -376,7 +379,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		}
 		cpu.Register.P.Negative = r>>6 == 1
 		cpu.Register.P.Zero = r == 0
-		// cpu.Register.P.Carry
+		cpu.Register.P.Carry = r >= 0
 	case "INC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data+1)

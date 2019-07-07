@@ -191,6 +191,13 @@ type Pallet struct {
 }
 
 func NewPallet(src []int) *Pallet {
+	src[0x04] = src[0x00]
+	src[0x08] = src[0x00]
+	src[0x0C] = src[0x00]
+	src[0x10] = src[0x00]
+	src[0x14] = src[0x04]
+	src[0x18] = src[0x08]
+	src[0x1C] = src[0x0C]
 	return &Pallet{
 		src: src,
 	}

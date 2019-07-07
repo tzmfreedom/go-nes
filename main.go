@@ -91,32 +91,6 @@ func (nes *NES) run() error {
 		if background != nil {
 			nes.render(background, pallet, sprites)
 		}
-		sdl.PollEvent()
-		states := sdl.GetKeyboardState()
-		if states[sdl.SCANCODE_Z] == 1 {
-			nes.cpu.GamePad.A = true
-		}
-		if states[sdl.SCANCODE_X] == 1 {
-			nes.cpu.GamePad.B = true
-		}
-		if states[sdl.SCANCODE_S] == 1 {
-			nes.cpu.GamePad.Select = true
-		}
-		if states[sdl.SCANCODE_D] == 1 {
-			nes.cpu.GamePad.Start = true
-		}
-		if states[sdl.SCANCODE_UP] == 1 {
-			nes.cpu.GamePad.Up = true
-		}
-		if states[sdl.SCANCODE_DOWN] == 1 {
-			nes.cpu.GamePad.Down = true
-		}
-		if states[sdl.SCANCODE_LEFT] == 1 {
-			nes.cpu.GamePad.Left = true
-		}
-		if states[sdl.SCANCODE_RIGHT] == 1 {
-			nes.cpu.GamePad.Right = true
-		}
 	}
 	return nil
 }
@@ -131,52 +105,38 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 		bgIndex = 0x1000/16
 	}
 	start := time.Now().UnixNano()
-	pixels := make([]uint8, 256*240*4)
 	for i, line := range background.tiles {
 		for j, tile := range line {
 			sprite := nes.sprites[bgIndex+tile.spriteId]
 			for y, line := range sprite.bitMap {
 				for x, bit := range line {
 					c := pallet.getBackgroundColor(tile.palletId, bit)
-					index := ((j*SpriteSize+x)+((i*SpriteSize+y)<<8)) * 4
-					pixels[index] = c.R
-					pixels[index+1] = c.G
-					pixels[index+2] = c.B
-					pixels[index+3] = 0xff
+					nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+					nes.renderer.DrawPoint(int32(j*SpriteSize+x), int32(i*SpriteSize+y))
 				}
 			}
 		}
 	}
 	for _, sprite := range sprites	{
 		s := nes.sprites[spIndex+sprite.spriteId]
-		//isVerticalReverse := sprite.attr & 0x80
-		//isHoriozntalReverse := sprite.attr & 0x40
+		isVerticalReverse := sprite.attr & 0x80 != 0
+		isHoriozntalReverse := sprite.attr & 0x40 != 0
 		//isPriority := sprite.attr & 0x20
 		palletId := sprite.attr & 0x03
 		for y, line := range s.bitMap {
 			for x, bit := range line {
+				if isVerticalReverse {
+					y = SpriteSize - y
+				}
+				if isHoriozntalReverse {
+					x = SpriteSize - x
+				}
 				c := pallet.getSpriteColor(palletId, bit)
-
-				index := ((sprite.x+x)+((sprite.y+y)<<8)) * 4
-				pixels[index] = c.R
-				pixels[index+1] = c.G
-				pixels[index+2] = c.B
-				pixels[index+3] = 0xff
+				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+				nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
 			}
 		}
 	}
-	texture, err := nes.renderer.CreateTexture(sdl.PIXELFORMAT_RGBA8888, sdl.TEXTUREACCESS_TARGET, 256, 240)
-	if err != nil {
-		panic(err)
-	}
-	rect := &sdl.Rect{
-		X: 0,
-		Y: 0,
-		W: 256,
-		H: 240,
-	}
-	texture.Update(rect, pixels, 256)
-	nes.renderer.Copy(texture, nil, nil)
 
 	end := time.Now().UnixNano()
 	nes.frame++
