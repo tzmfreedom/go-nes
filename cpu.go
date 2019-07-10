@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
-	"math"
-	"os"
+	"strconv"
 )
 
 type Cpu struct {
@@ -130,9 +129,6 @@ func (cpu *Cpu) Read(index int) int {
 	}
 	if index >= 0xC000 {
 		if len(cpu.PrgROM) == 0x8000 {
-			if current != nil && current.Base != "BRK" {
-				debug(current)
-			}
 			return int(cpu.PrgROM[index-0x8000])
 		}
 		return int(cpu.PrgROM[index-0xC000])
@@ -150,7 +146,11 @@ func (cpu *Cpu) Reset() {
 		f = cpu.Read(0xFFFC)
 		s = cpu.Read(0xFFFD)
 	}
-	cpu.Register.PC = s*256 + f
+	debug(strconv.FormatInt(int64(s*256 + f), 16))
+	cpu.Register.P.Set(0x24)
+	cpu.Register.SP = 0xFD
+	cpu.Register.PC = 0xC000
+	//cpu.Register.PC = s*256 + f
 }
 
 func (cpu *Cpu) ProcessNMI() {
@@ -200,26 +200,40 @@ func (cpu *Cpu) Run() int {
 		cpu.ProcessNMI()
 	}
 
+	pc := int64(cpu.Register.PC)
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
 	current = opCode
-	//if false {
-	if false || dbg || opCode.Base == "BIT" {
-		dbg = true
-		debug(cpu.Register.PC)
-		debug(opCodeRaw)
-		debug(opCode)
-		debug(cpu.Register)
-		reader := bufio.NewReader(os.Stdin)
-		cmd, _ := reader.ReadString('\n')
-		if cmd == "s\n" {
-			debug(cpu.Read(cpu.Register.PC))
-			debug(cpu.Read(cpu.Register.PC+1))
-			debug(cpu.Read(cpu.Register.PC+2))
-			debug(cpu.Read(cpu.Register.PC+3))
-			debug(cpu.Read(cpu.Register.PC+4))
-		}
+	//debug(current)
+	if true {
+	//if false || dbg || (cpu.Register.Y == 0 && cpu.Register.X == 0){
+		//dbg = true
+		fmt.Printf(
+			"%s\t%s\t%s\tA:%s\tX:%s\tY:%s\tP:%s\tSP:%s\tCYC:%d\tSL:%d\n",
+			strconv.FormatInt(pc, 16),
+			opCode.Base,
+			strconv.FormatInt(int64(opCode.Operand), 16),
+			strconv.FormatInt(int64(cpu.Register.A), 16),
+			strconv.FormatInt(int64(cpu.Register.X), 16),
+			strconv.FormatInt(int64(cpu.Register.Y), 16),
+			strconv.FormatInt(int64(cpu.Register.P.Int()), 16),
+			strconv.FormatInt(int64(cpu.Register.SP), 16),
+			0,
+			0,
+		)
+		//debug(opCodeRaw)
+		//debug(opCode)
+		//debug(cpu.Register)
+		//reader := bufio.NewReader(os.Stdin)
+		//cmd, _ := reader.ReadString('\n')
+		//if cmd == "s\n" {
+		//	debug(cpu.Read(cpu.Register.PC))
+		//	debug(cpu.Read(cpu.Register.PC+1))
+		//	debug(cpu.Read(cpu.Register.PC+2))
+		//	debug(cpu.Read(cpu.Register.PC+3))
+		//	debug(cpu.Read(cpu.Register.PC+4))
+		//}
 	}
 	cpu.Execute(opCode)
 	return cycles[opCodeRaw]
@@ -235,31 +249,32 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A + data + bool2int(cpu.Register.P.Carry)
-		cpu.Register.P.Negative = r>>6 == 1
-		//cpu.Register.P.Overflow = r
-		cpu.Register.P.Zero = r == 0
-		//cpu.Register.P.Carry = r == 0
-		cpu.Register.A = r
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 == 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = r > 0xFF
+		cpu.Register.A = r&0xFF
 	case "SBC":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		r := cpu.Register.A - data + bool2int(!cpu.Register.P.Carry)
-		cpu.Register.P.Negative = r>>6 == 1
-		//cpu.Register.P.Overflow = r
-		cpu.Register.P.Zero = r == 0
-		//cpu.Register.P.Carry = r == 0
-		cpu.Register.A = r
+		r := cpu.Register.A - data - bool2int(!cpu.Register.P.Carry)
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 != 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = r >= 0
+		cpu.Register.A = r&0xFF
 	case "AND":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
+		debug(cpu.Register.A, data)
 		r := cpu.Register.A & data
-		cpu.Register.P.Negative = r>>6 == 1
+		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "ORA":
@@ -269,38 +284,47 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A | data
-		cpu.Register.P.Negative = r>>6 == 1
+		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "EOR":
+		if opCode.Mode == ADDR_IMMEDIATE {
+			data = opCode.Operand
+		} else {
+			data = cpu.Read(opCode.Operand)
+		}
 		r := cpu.Register.A ^ data
-		cpu.Register.P.Negative = r>>6 == 1
+		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "ASL":
-		cpu.Register.A <<= 1
-		r := cpu.Register.A & int(math.Pow(2, 7))
-		cpu.Register.P.Negative = r>>6 == 1
-		cpu.Register.P.Zero = r == 0
-		cpu.Register.P.Carry = r != 0
+		c := cpu.Register.A&0x80 != 0
+		r := cpu.Register.A<<1
+		cpu.Register.A = r&0xFF
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = c
 	case "LSR":
-		cpu.Register.A >>= 1
-		r := cpu.Register.A & int(math.Pow(2, 0))
-		cpu.Register.P.Negative = r>>6 == 1
-		cpu.Register.P.Zero = r == 0
-		cpu.Register.P.Carry = r != 0
+		c := cpu.Register.A&0x01 != 0
+		r := cpu.Register.A>>1
+		cpu.Register.A = r & 0xFF
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = c
 	case "ROL":
-		cpu.Register.A = cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
-		r := cpu.Register.A & int(math.Pow(2, 7))
-		cpu.Register.P.Negative = r>>6 == 1
-		cpu.Register.P.Zero = r == 0
-		cpu.Register.P.Carry = r != 0
+		c := (cpu.Register.A>>7)&0x01 != 0
+		r := cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
+		cpu.Register.A = r&0xFF
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = c
 	case "ROR":
-		cpu.Register.A = cpu.Register.A>>1 + bool2int(cpu.Register.P.Carry)*int(math.Pow(2, 7))
-		r := cpu.Register.A & int(math.Pow(2, 0))
-		cpu.Register.P.Negative = r>>6 == 1
-		cpu.Register.P.Zero = r == 0
-		cpu.Register.P.Carry = r != 0
+		c := cpu.Register.A&0x01 != 0
+		r := cpu.Register.A>>1 + bool2int(cpu.Register.P.Carry)<<7
+		cpu.Register.A = r&0xFF
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Carry = c
 	case "BCC":
 		if !cpu.Register.P.Carry {
 			cpu.Register.PC = opCode.Operand
@@ -334,21 +358,29 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			cpu.Register.PC = opCode.Operand
 		}
 	case "BIT":
-		// TODO: impl
+		data = cpu.Read(opCode.Operand)
+		cpu.Register.P.Zero = cpu.Register.A & data == 0
+		cpu.Register.P.Negative = data & 0x80 != 0
+		cpu.Register.P.Overflow = data & 0x40 != 0
 	case "JMP":
 		cpu.Register.PC = opCode.Operand
 	case "JSR":
-		cpu.PushStack(cpu.Register.PC)
+		pc := cpu.Register.PC-1
+		cpu.PushStack((pc >> 8) & 0xFF)
+		cpu.PushStack(pc & 0xFF)
 		cpu.Register.PC = opCode.Operand
 	case "RTS":
-		cpu.Register.PC = cpu.PopStack()
+		l := cpu.PopStack()
+		h := cpu.PopStack()
+		cpu.Register.PC = h<<8 + l + 1
 	case "BRK":
 	case "RTI":
 		status := cpu.PopStack()
 		l := cpu.PopStack()
 		h := cpu.PopStack()
 		cpu.Register.P.Set(status)
-		cpu.Register.PC = h*256 + l
+		cpu.Register.P.Reserved = true
+		cpu.Register.PC = h<<8 + l
 	case "CMP":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
@@ -356,14 +388,9 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.A - data
-		if r > 0 {
-			cpu.Register.P.Carry = true
-		} else {
-			cpu.Register.P.Carry = false
-		}
-		cpu.Register.P.Negative = r>>6 == 1
+		cpu.Register.P.Carry = r >= 0
+		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
-		// cpu.Register.P.Carry
 	case "CPX":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
@@ -371,14 +398,9 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.X - data
-		if r > 0 {
-			cpu.Register.P.Carry = true
-		} else {
-			cpu.Register.P.Carry = false
-		}
-		cpu.Register.P.Negative = r>>6 == 1
+		cpu.Register.P.Carry = r >= 0
+		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
-		// cpu.Register.P.Carry
 	case "CPY":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
@@ -386,39 +408,34 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		r := cpu.Register.Y - data
-		if r > 0 {
-			cpu.Register.P.Carry = true
-		} else {
-			cpu.Register.P.Carry = false
-		}
-		cpu.Register.P.Negative = r>>6 == 1
-		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = r >= 0
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Zero = r == 0
 	case "INC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data+1)
-		cpu.Register.P.Negative = (data+1)&0x80 == 1
+		cpu.Register.P.Negative = (data+1)&0x80 != 0
 		cpu.Register.P.Zero = data+1 == 0
 	case "DEC":
 		data = cpu.Read(opCode.Operand)
 		cpu.Write(opCode.Operand, data-1)
-		cpu.Register.P.Negative = (data-1)&0x80 == 1
+		cpu.Register.P.Negative = (data-1)&0x80 != 0
 		cpu.Register.P.Zero = data-1 == 0
 	case "INX":
 		cpu.Register.X = (cpu.Register.X+1)&0xFF
-		cpu.Register.P.Negative = cpu.Register.X&0x80 == 1
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "DEX":
 		cpu.Register.X = (cpu.Register.X-1)&0xFF
-		cpu.Register.P.Negative = cpu.Register.X&0x80 == 1
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "INY":
 		cpu.Register.Y = (cpu.Register.Y+1)&0xFF
-		cpu.Register.P.Negative = cpu.Register.Y&0x80 == 1
+		cpu.Register.P.Negative = cpu.Register.Y&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "DEY":
 		cpu.Register.Y = (cpu.Register.Y-1)&0xFF
-		cpu.Register.P.Negative = cpu.Register.Y&0x80 == 1
+		cpu.Register.P.Negative = cpu.Register.Y&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "CLC":
 		cpu.Register.P.Carry = false
@@ -441,7 +458,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.A = data
-		cpu.Register.P.Negative = data>>7 == 1
+		cpu.Register.P.Negative = data&0x80 != 0
 		cpu.Register.P.Zero = data == 0
 	case "LDX":
 		if opCode.Mode == ADDR_IMMEDIATE {
@@ -450,7 +467,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.X = data
-		cpu.Register.P.Negative = data>>6 == 1
+		cpu.Register.P.Negative = data&0x80 != 0
 		cpu.Register.P.Zero = data == 0
 	case "LDY":
 		if opCode.Mode == ADDR_IMMEDIATE {
@@ -459,7 +476,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		cpu.Register.Y = data
-		cpu.Register.P.Negative = data>>6 == 1
+		cpu.Register.P.Negative = data&0x80 != 0
 		cpu.Register.P.Zero = data == 0
 	case "STA":
 		cpu.Write(opCode.Operand, cpu.Register.A)
@@ -469,36 +486,37 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Write(opCode.Operand, cpu.Register.Y)
 	case "TAX":
 		cpu.Register.X = cpu.Register.A
-		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TXA":
 		cpu.Register.A = cpu.Register.X
-		cpu.Register.P.Negative = cpu.Register.X>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "TAY":
 		cpu.Register.Y = cpu.Register.A
-		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TYA":
 		cpu.Register.A = cpu.Register.Y
-		cpu.Register.P.Negative = cpu.Register.Y>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.Y&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.Y == 0
 	case "TSX":
 		cpu.Register.X = cpu.Register.SP
-		cpu.Register.P.Negative = cpu.Register.SP>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.SP&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.SP == 0
 	case "TXS":
-		cpu.Register.SP = cpu.Register.X + 0x100
+		cpu.Register.SP = cpu.Register.X
 	case "PHA":
 		cpu.PushStack(cpu.Register.A)
 	case "PLA":
 		cpu.Register.A = cpu.PopStack()
-		cpu.Register.P.Negative = cpu.Register.A>>6 == 1
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "PHP":
 		cpu.PushStack(cpu.Register.P.Int())
 	case "PLP":
 		cpu.Register.P.Set(cpu.PopStack())
+		cpu.Register.P.Reserved = true
 	case "NOP":
 		return
 	}

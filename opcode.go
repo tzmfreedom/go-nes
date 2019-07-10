@@ -151,6 +151,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "AND",
 		Mode: ADDR_IMMEDIATE,
 	},
+	0x2A: {
+		Base: "ROL",
+		Mode: ADDR_A,
+	},
 	0x2C: {
 		Base: "BIT",
 		Mode: ADDR_ABS,

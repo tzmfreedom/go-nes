@@ -208,14 +208,14 @@ func (r *StatusRegister) Int() int {
 }
 
 func (r *StatusRegister) Set(v int) {
-	r.Negative = int(math.Pow(2, 7)) != 0
-	r.Overflow = int(math.Pow(2, 6)) != 0
-	r.Reserved = int(math.Pow(2, 5)) != 0
-	r.Break = int(math.Pow(2, 4)) != 0
-	r.Decimal = int(math.Pow(2, 3)) != 0
-	r.Interrupt = int(math.Pow(2, 2)) != 0
-	r.Zero = int(math.Pow(2, 1)) != 0
-	r.Carry = int(math.Pow(2, 0)) != 0
+	r.Negative = v & 0x80 != 0
+	r.Overflow = v & 0x40 != 0
+	r.Reserved = v & 0x20 != 0
+	r.Break = v & 0x10 != 0
+	r.Decimal = v & 0x08 != 0
+	r.Interrupt = v & 0x04 != 0
+	r.Zero = v & 0x02 != 0
+	r.Carry = v & 0x01 != 0
 }
 
 func debug(args ...interface{}) {
