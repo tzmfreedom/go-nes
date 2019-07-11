@@ -413,14 +413,14 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = r == 0
 	case "INC":
 		data = cpu.Read(opCode.Operand)
-		cpu.Write(opCode.Operand, data+1)
+		cpu.Write(opCode.Operand, (data+1)&0xFF)
 		cpu.Register.P.Negative = (data+1)&0x80 != 0
-		cpu.Register.P.Zero = data+1 == 0
+		cpu.Register.P.Zero = (data+1)&0xFF == 0
 	case "DEC":
 		data = cpu.Read(opCode.Operand)
-		cpu.Write(opCode.Operand, data-1)
+		cpu.Write(opCode.Operand, (data-1)&0xFF)
 		cpu.Register.P.Negative = (data-1)&0x80 != 0
-		cpu.Register.P.Zero = data-1 == 0
+		cpu.Register.P.Zero = (data-1)&0xFF == 0
 	case "INX":
 		cpu.Register.X = (cpu.Register.X+1)&0xFF
 		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
