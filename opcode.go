@@ -63,6 +63,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "ORA",
 		Mode: ADDR_XIND,
 	},
+	0x04: {
+		Base: "NOP",
+		Mode: ADDR_ZPG,
+	},
 	0x05: {
 		Base: "ORA",
 		Mode: ADDR_ZPG,
@@ -83,6 +87,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "ASL",
 		Mode: ADDR_A,
 	},
+	0x0C: {
+		Base: "NOP",
+		Mode: ADDR_ABS,
+	},
 	0x0D: {
 		Base: "ORA",
 		Mode: ADDR_ABS,
@@ -99,6 +107,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "ORA",
 		Mode: ADDR_INDY,
 	},
+	0x14: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0x15: {
 		Base: "ORA",
 		Mode: ADDR_ZPG,
@@ -114,6 +126,14 @@ var opCodeList = map[int]*OpCode{
 	0x19: {
 		Base: "ORA",
 		Mode: ADDR_ABSY,
+	},
+	0x1A: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0x1C: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
 	},
 	0x1D: {
 		Base: "ORA",
@@ -175,6 +195,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "AND",
 		Mode: ADDR_INDY,
 	},
+	0x34: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0x35: {
 		Base: "AND",
 		Mode: ADDR_ZPGX,
@@ -191,6 +215,14 @@ var opCodeList = map[int]*OpCode{
 		Base: "AND",
 		Mode: ADDR_ABSY,
 	},
+	0x3A: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0x3C: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
+	},
 	0x3D: {
 		Base: "AND",
 		Mode: ADDR_ABSX,
@@ -206,6 +238,10 @@ var opCodeList = map[int]*OpCode{
 	0x41: {
 		Base: "EOR",
 		Mode: ADDR_XIND,
+	},
+	0x44: {
+		Base: "NOP",
+		Mode: ADDR_ZPG,
 	},
 	0x45: {
 		Base: "EOR",
@@ -247,6 +283,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "EOR",
 		Mode: ADDR_INDY,
 	},
+	0x54: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0x55: {
 		Base: "EOR",
 		Mode: ADDR_ZPGX,
@@ -263,6 +303,14 @@ var opCodeList = map[int]*OpCode{
 		Base: "EOR",
 		Mode: ADDR_ABSY,
 	},
+	0x5A: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0x5C: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
+	},
 	0x5D: {
 		Base: "EOR",
 		Mode: ADDR_ABSX,
@@ -278,6 +326,10 @@ var opCodeList = map[int]*OpCode{
 	0x61: {
 		Base: "ADC",
 		Mode: ADDR_XIND,
+	},
+	0x64: {
+		Base: "NOP",
+		Mode: ADDR_ZPG,
 	},
 	0x65: {
 		Base: "ADC",
@@ -319,6 +371,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "ADC",
 		Mode: ADDR_INDY,
 	},
+	0x74: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0x75: {
 		Base: "ADC",
 		Mode: ADDR_ZPGX,
@@ -335,6 +391,14 @@ var opCodeList = map[int]*OpCode{
 		Base: "ADC",
 		Mode: ADDR_ABSY,
 	},
+	0x7A: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0x7C: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
+	},
 	0x7D: {
 		Base: "ADC",
 		Mode: ADDR_ABSX,
@@ -343,9 +407,17 @@ var opCodeList = map[int]*OpCode{
 		Base: "ROR",
 		Mode: ADDR_ABSX,
 	},
+	0x80: {
+		Base: "NOP",
+		Mode: ADDR_IMMEDIATE,
+	},
 	0x81: {
 		Base: "STA",
 		Mode: ADDR_XIND,
+	},
+	0x82: {
+		Base: "NOP",
+		Mode: ADDR_IMMEDIATE,
 	},
 	0x84: {
 		Base: "STY",
@@ -362,6 +434,10 @@ var opCodeList = map[int]*OpCode{
 	0x88: {
 		Base: "DEY",
 		Mode: ADDR_IMPL,
+	},
+	0x89: {
+		Base: "NOP",
+		Mode: ADDR_IMMEDIATE,
 	},
 	0x8A: {
 		Base: "TXA",
@@ -515,6 +591,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "CMP",
 		Mode: ADDR_XIND,
 	},
+	0xC2: {
+		Base: "NOP",
+		Mode: ADDR_IMMEDIATE,
+	},
 	0xC4: {
 		Base: "CPY",
 		Mode: ADDR_ZPG,
@@ -559,6 +639,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "CMP",
 		Mode: ADDR_INDY,
 	},
+	0xD4: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0xD5: {
 		Base: "CMP",
 		Mode: ADDR_ZPGX,
@@ -575,6 +659,14 @@ var opCodeList = map[int]*OpCode{
 		Base: "CMP",
 		Mode: ADDR_ABSY,
 	},
+	0xDA: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0xDC: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
+	},
 	0xDD: {
 		Base: "CMP",
 		Mode: ADDR_ABSX,
@@ -590,6 +682,10 @@ var opCodeList = map[int]*OpCode{
 	0xE1: {
 		Base: "SBC",
 		Mode: ADDR_XIND,
+	},
+	0xE2: {
+		Base: "NOP",
+		Mode: ADDR_IMMEDIATE,
 	},
 	0xE4: {
 		Base: "CPX",
@@ -635,6 +731,10 @@ var opCodeList = map[int]*OpCode{
 		Base: "SBC",
 		Mode: ADDR_INDY,
 	},
+	0xF4: {
+		Base: "NOP",
+		Mode: ADDR_ZPGX,
+	},
 	0xF5: {
 		Base: "SBC",
 		Mode: ADDR_ZPGX,
@@ -650,6 +750,14 @@ var opCodeList = map[int]*OpCode{
 	0xF9: {
 		Base: "SBC",
 		Mode: ADDR_ABSY,
+	},
+	0xFA: {
+		Base: "NOP",
+		Mode: ADDR_IMPL,
+	},
+	0xFC: {
+		Base: "NOP",
+		Mode: ADDR_ABSX,
 	},
 	0xFD: {
 		Base: "SBC",
@@ -689,11 +797,11 @@ func (opCode *OpCode) FetchOperand(cpu *Cpu) {
 	case ADDR_ABSX:
 		l := cpu.Fetch()
 		h := cpu.Fetch()
-		opCode.Operand = l + h<<8 + cpu.Register.X
+		opCode.Operand = (l + h<<8 + cpu.Register.X)&0xFFFF
 	case ADDR_ABSY:
 		l := cpu.Fetch()
 		h := cpu.Fetch()
-		opCode.Operand = l + h<<8 + cpu.Register.Y
+		opCode.Operand = (l + h<<8 + cpu.Register.Y)&0xFFFF
 	case ADDR_REL:
 		rel := cpu.Fetch()
 		if rel < 0x7F {

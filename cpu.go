@@ -312,7 +312,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = r&0xFF == 0
 		cpu.Register.P.Carry = c
 	case "ROL":
-		c := (cpu.Register.A>>7)&0x01 != 0
+		c := cpu.Register.A&0x80 != 0
 		r := cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
 		cpu.Register.A = r&0xFF
 		cpu.Register.P.Negative = r&0x80 != 0
@@ -363,6 +363,14 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Negative = data & 0x80 != 0
 		cpu.Register.P.Overflow = data & 0x40 != 0
 	case "JMP":
+		if opCode.Mode == ADDR_IND {
+			l := cpu.Read(cpu.Register.PC-2)
+			h := cpu.Read(cpu.Register.PC-1)
+			addr := l + h<<8
+			if addr&0xFF == 0xFF {
+				opCode.Operand = cpu.Read(addr) + cpu.Read(addr&0xFF00)<<8
+			}
+		}
 		cpu.Register.PC = opCode.Operand
 	case "JSR":
 		pc := cpu.Register.PC-1
