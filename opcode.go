@@ -149,7 +149,7 @@ var opCodeList = map[int]*OpCode{
 	},
 	0x17: {
 		Base: "SLO",
-		Mode: ADDR_XIND,
+		Mode: ADDR_ZPGX,
 	},
 	0x18: {
 		Base: "CLC",
@@ -277,7 +277,7 @@ var opCodeList = map[int]*OpCode{
 	},
 	0x37: {
 		Base: "RLA",
-		Mode: ADDR_XIND,
+		Mode: ADDR_ZPGX,
 	},
 	0x38: {
 		Base: "SEC",
@@ -324,7 +324,7 @@ var opCodeList = map[int]*OpCode{
 		Mode: ADDR_IMPL,
 	},
 	0x43: {
-		Base: "RLA",
+		Base: "SRE",
 		Mode: ADDR_XIND,
 	},
 	0x44: {
@@ -405,7 +405,7 @@ var opCodeList = map[int]*OpCode{
 	},
 	0x57: {
 		Base: "SRE",
-		Mode: ADDR_XIND,
+		Mode: ADDR_ZPGX,
 	},
 	0x58: {
 		Base: "CLI",
@@ -661,7 +661,7 @@ var opCodeList = map[int]*OpCode{
 	},
 	0x97: {
 		Base: "SAX",
-		Mode: ADDR_INDY,
+		Mode: ADDR_ZPGY,
 	},
 	0x98: {
 		Base: "TYA",

@@ -526,6 +526,101 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Reserved = true
 	case "NOP":
 		return
+	case "SLO":
+		data = cpu.Read(opCode.Operand)
+		cpu.Register.P.Carry = data&0x80 != 0
+		data = (data<<1)&0xFF
+		cpu.Register.A |= data
+		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Write(opCode.Operand, data)
+	case "RLA":
+		data = cpu.Read(opCode.Operand)
+		raw := data<<1 + bool2int(cpu.Register.P.Carry)
+		cpu.Register.P.Carry = raw > 0xFF
+		r := raw&0xFF
+		cpu.Register.A &= r
+		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Write(opCode.Operand, r)
+	case "SRE":
+		data = cpu.Read(opCode.Operand)
+		cpu.Register.P.Carry = data&0x01 != 0
+		data = (data>>1)&0xFF
+		cpu.Register.A ^= data
+		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Write(opCode.Operand, data)
+	case "RRA":
+		data = cpu.Read(opCode.Operand)
+		cpu.Register.P.Carry = data&0x01 != 0
+		r := (data>>1 + bool2int(cpu.Register.P.Carry)<<7)&0xFF
+		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 != 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.A ^= r
+		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Write(opCode.Operand, r)
+	case "SAX":
+		cpu.Write(opCode.Operand, cpu.Register.A & cpu.Register.X)
+	case "LAX":
+		data = cpu.Read(opCode.Operand)
+		cpu.Register.A = data
+		cpu.Register.X = data
+		cpu.Register.P.Zero = data&0xFF == 0
+		cpu.Register.P.Negative = data&0x80 != 0
+	case "DCP":
+		data = cpu.Read(opCode.Operand)-1
+		cpu.Write(opCode.Operand, data&0xFF)
+		cpu.Register.A = cpu.Register.A - data
+		cpu.Register.P.Zero = data&0xFF == 0
+		cpu.Register.P.Negative = data&0x80 != 0
+		cpu.Register.P.Carry = data >= 0
+	case "ISC":
+		data = cpu.Read(opCode.Operand)+1
+		cpu.Write(opCode.Operand, data&0xFF)
+		cpu.Register.A = cpu.Register.A - data
+		cpu.Register.P.Zero = data&0xFF == 0
+		cpu.Register.P.Negative = data&0x80 != 0
+		cpu.Register.P.Carry = data >= 0
+	case "ANC":
+		cpu.Register.A &= data
+		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Register.P.Carry = cpu.Register.P.Negative
+	case "ALR":
+		data = cpu.Register.A & data
+		cpu.Register.A = (data>>1)&0xFF
+		cpu.Register.P.Zero = cpu.Register.A == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Register.P.Carry = data&0x01 != 0
+	case "ARR":
+		data = cpu.Register.A & data
+		cpu.Register.P.Carry = data&0x01 != 0
+		data = data>>1+bool2int(cpu.Register.P.Carry)<<7
+		//cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 != 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.A = data&0xFF
+		cpu.Register.P.Zero = cpu.Register.A == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+	case "XAA":
+		cpu.Register.X &= data
+		cpu.Register.P.Zero = cpu.Register.X&0xFF == 0
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
+	case "AXS":
+		r := cpu.Register.A&cpu.Register.X-data
+		cpu.Register.X = r&0xFF
+		cpu.Register.P.Zero = cpu.Register.X == 0
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
+		cpu.Register.P.Carry = r >= 0
+	case "AHX":
+		panic("not impl")
+	case "SHY":
+		panic("not impl")
+	case "SHX":
+		panic("not impl")
+	case "TAS":
+		panic("not impl")
+	case "LAS":
+		panic("not impl")
 	}
 }
 
