@@ -5,7 +5,6 @@ import (
 	"github.com/k0kubun/pp"
 	"github.com/veandco/go-sdl2/sdl"
 	"io/ioutil"
-	"math"
 	"os"
 	"time"
 )
@@ -197,14 +196,14 @@ type StatusRegister struct {
 }
 
 func (r *StatusRegister) Int() int {
-	return bool2int(r.Negative)*int(math.Pow(2, 7)) +
-		bool2int(r.Overflow)*int(math.Pow(2, 6)) +
-		bool2int(r.Reserved)*int(math.Pow(2, 5)) +
-		bool2int(r.Break)*int(math.Pow(2, 4)) +
-		bool2int(r.Decimal)*int(math.Pow(2, 3)) +
-		bool2int(r.Interrupt)*int(math.Pow(2, 2)) +
-		bool2int(r.Zero)*int(math.Pow(2, 1)) +
-		bool2int(r.Carry)*int(math.Pow(2, 0))
+	return bool2int(r.Negative)<<7 +
+		bool2int(r.Overflow)<<6 +
+		bool2int(r.Reserved)<<5 +
+		bool2int(r.Break)<<4 +
+		bool2int(r.Decimal)<<3 +
+		bool2int(r.Interrupt)<<2 +
+		bool2int(r.Zero)<<1 +
+		bool2int(r.Carry)
 }
 
 func (r *StatusRegister) Set(v int) {

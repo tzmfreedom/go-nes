@@ -553,12 +553,16 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Write(opCode.Operand, data)
 	case "RRA":
 		data = cpu.Read(opCode.Operand)
-		cpu.Register.P.Carry = data&0x01 != 0
-		r := (data>>1 + bool2int(cpu.Register.P.Carry)<<7)&0xFF
-		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 != 0 && (cpu.Register.A ^ r) & 0x80 != 0
-		cpu.Register.A ^= r
-		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
-		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		//debug(strconv.FormatInt(int64(data), 16))
+		c := data&0x01 != 0
+		data = data>>1 + bool2int(cpu.Register.P.Carry)<<7
+
+		r := data + bool2int(c)
+		cpu.Register.P.Carry = (cpu.Register.A+r) > 0xFF
+		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 == 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.P.Zero = (cpu.Register.A+r)&0xFF == 0
+		cpu.Register.P.Negative = (cpu.Register.A+r)&0x80 != 0
+		cpu.Register.A = (cpu.Register.A+r)&0xFF
 		cpu.Write(opCode.Operand, r)
 	case "SAX":
 		cpu.Write(opCode.Operand, cpu.Register.A & cpu.Register.X)
