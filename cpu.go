@@ -205,7 +205,6 @@ func (cpu *Cpu) Run() int {
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
 	current = opCode
-	//debug(current)
 	if true {
 	//if false || dbg || (cpu.Register.Y == 0 && cpu.Register.X == 0){
 		//dbg = true
