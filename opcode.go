@@ -1122,11 +1122,11 @@ func (opCode *OpCode) FetchOperand(cpu *Cpu) {
 			opCode.Operand = cpu.Register.PC - (rel ^ 0xFF) - 1
 		}
 	case ADDR_XIND:
-		addr := (cpu.Read(cpu.Fetch()) + cpu.Register.X) & 0xFF
-		opCode.Operand = cpu.Read(addr)+ cpu.Read(addr+1)<<8
+		addr := cpu.Fetch() + cpu.Register.X
+		opCode.Operand = cpu.Read(addr&0xFF)+ cpu.Read((addr+1)&0xFF)<<8
 	case ADDR_INDY:
 		addr := cpu.Fetch()
-		opCode.Operand = (cpu.Read(addr) + cpu.Read(addr+1)<<8 + cpu.Register.Y)&0xFFFF
+		opCode.Operand = (cpu.Read(addr) + cpu.Read((addr+1)&0xFF)<<8 + cpu.Register.Y)&0xFFFF
 	case ADDR_IND:
 		addr := cpu.Fetch()+cpu.Fetch()<<8
 		opCode.Operand = cpu.Read(addr) + cpu.Read(addr+1)<<8
