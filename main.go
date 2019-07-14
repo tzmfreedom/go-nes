@@ -218,7 +218,7 @@ func (r *StatusRegister) Set(v int) {
 }
 
 func debug(args ...interface{}) {
-	if true {
+	if false {
 		pp.Println(args...)
 	}
 }

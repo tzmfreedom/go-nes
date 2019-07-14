@@ -141,11 +141,11 @@ var opCodeList = map[int]*OpCode{
 	},
 	0x15: {
 		Base: "ORA",
-		Mode: ADDR_ZPG,
+		Mode: ADDR_ZPGX,
 	},
 	0x16: {
 		Base: "ASL",
-		Mode: ADDR_ZPG,
+		Mode: ADDR_ZPGX,
 	},
 	0x17: {
 		Base: "SLO",

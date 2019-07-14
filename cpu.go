@@ -35,6 +35,13 @@ func NewCpu(prgRom []byte) *Cpu {
 }
 
 func (cpu *Cpu) Write(index int, value int) {
+	if index == 0x11 {
+		debug("hogehoge", value)
+	}
+	if index == 0x00 {
+		debug("fugafuga", value)
+	}
+
 	if index < 0x0800 {
 		cpu.RAM[index] = value
 	} else if index < 0x2000 {
@@ -147,10 +154,10 @@ func (cpu *Cpu) Reset() {
 		s = cpu.Read(0xFFFD)
 	}
 	debug(strconv.FormatInt(int64(s*256 + f), 16))
-	cpu.Register.P.Set(0x24)
-	cpu.Register.SP = 0xFD
-	cpu.Register.PC = 0xC000
-	//cpu.Register.PC = s*256 + f
+	//cpu.Register.P.Set(0x24)
+	//cpu.Register.SP = 0xFD
+	//cpu.Register.PC = 0xC000
+	cpu.Register.PC = s*256 + f
 }
 
 func (cpu *Cpu) ProcessNMI() {
@@ -297,30 +304,66 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = r == 0
 		cpu.Register.A = r
 	case "ASL":
-		c := cpu.Register.A&0x80 != 0
-		r := cpu.Register.A<<1
-		cpu.Register.A = r&0xFF
+		if opCode.Mode == ADDR_A {
+			data = cpu.Register.A
+		} else {
+			data = cpu.Read(opCode.Operand)
+		}
+		c := data&0x80 != 0
+		r := data<<1
+		if opCode.Mode == ADDR_A {
+			cpu.Register.A = r&0xFF
+		} else {
+			cpu.Write(opCode.Operand, r&0xFF)
+		}
 		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r&0xFF == 0
 		cpu.Register.P.Carry = c
 	case "LSR":
-		c := cpu.Register.A&0x01 != 0
-		r := cpu.Register.A>>1
-		cpu.Register.A = r & 0xFF
+		if opCode.Mode == ADDR_A {
+			data = cpu.Register.A
+		} else {
+			data = cpu.Read(opCode.Operand)
+		}
+		c := data&0x01 != 0
+		r := data>>1
+		if opCode.Mode == ADDR_A {
+			cpu.Register.A = r&0xFF
+		} else {
+			cpu.Write(opCode.Operand, r&0xFF)
+		}
 		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r&0xFF == 0
 		cpu.Register.P.Carry = c
 	case "ROL":
-		c := cpu.Register.A&0x80 != 0
-		r := cpu.Register.A<<1 + bool2int(cpu.Register.P.Carry)
-		cpu.Register.A = r&0xFF
+		if opCode.Mode == ADDR_A {
+			data = cpu.Register.A
+		} else {
+			data = cpu.Read(opCode.Operand)
+		}
+		c := data&0x80 != 0
+		r := data<<1 + bool2int(cpu.Register.P.Carry)
+		if opCode.Mode == ADDR_A {
+			cpu.Register.A = r&0xFF
+		} else {
+			cpu.Write(opCode.Operand, r&0xFF)
+		}
 		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r&0xFF == 0
 		cpu.Register.P.Carry = c
 	case "ROR":
-		c := cpu.Register.A&0x01 != 0
-		r := cpu.Register.A>>1 + bool2int(cpu.Register.P.Carry)<<7
-		cpu.Register.A = r&0xFF
+		if opCode.Mode == ADDR_A {
+			data = cpu.Register.A
+		} else {
+			data = cpu.Read(opCode.Operand)
+		}
+		c := data&0x01 != 0
+		r := data>>1 + bool2int(cpu.Register.P.Carry)<<7
+		if opCode.Mode == ADDR_A {
+			cpu.Register.A = r&0xFF
+		} else {
+			cpu.Write(opCode.Operand, r&0xFF)
+		}
 		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r&0xFF == 0
 		cpu.Register.P.Carry = c
@@ -397,7 +440,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		r := cpu.Register.A - data
 		cpu.Register.P.Carry = r >= 0
 		cpu.Register.P.Negative = r&0x80 != 0
-		cpu.Register.P.Zero = r == 0
+		cpu.Register.P.Zero = r&0xFF == 0
 	case "CPX":
 		if opCode.Mode == ADDR_IMMEDIATE {
 			data = opCode.Operand
@@ -563,7 +606,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = (cpu.Register.A+r)&0xFF == 0
 		cpu.Register.P.Negative = (cpu.Register.A+r)&0x80 != 0
 		cpu.Register.A = (cpu.Register.A+r)&0xFF
-		cpu.Write(opCode.Operand, r)
+		cpu.Write(opCode.Operand, data)
 	case "SAX":
 		cpu.Write(opCode.Operand, cpu.Register.A & cpu.Register.X)
 	case "LAX":
@@ -573,19 +616,21 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = data&0xFF == 0
 		cpu.Register.P.Negative = data&0x80 != 0
 	case "DCP":
-		data = cpu.Read(opCode.Operand)-1
-		cpu.Write(opCode.Operand, data&0xFF)
-		cpu.Register.A = cpu.Register.A - data
-		cpu.Register.P.Zero = data&0xFF == 0
-		cpu.Register.P.Negative = data&0x80 != 0
-		cpu.Register.P.Carry = data >= 0
+		data = (cpu.Read(opCode.Operand)-1)&0xFF
+		cpu.Write(opCode.Operand, data)
+		r := cpu.Register.A - data
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Carry = r >= 0
 	case "ISC":
-		data = cpu.Read(opCode.Operand)+1
-		cpu.Write(opCode.Operand, data&0xFF)
-		cpu.Register.A = cpu.Register.A - data
-		cpu.Register.P.Zero = data&0xFF == 0
-		cpu.Register.P.Negative = data&0x80 != 0
-		cpu.Register.P.Carry = data >= 0
+		data = (cpu.Read(opCode.Operand)+1)&0xFF
+		cpu.Write(opCode.Operand, data)
+		r := cpu.Register.A - data - bool2int(!cpu.Register.P.Carry)
+		cpu.Register.P.Overflow = (cpu.Register.A ^ data) & 0x80 != 0 && (cpu.Register.A ^ r) & 0x80 != 0
+		cpu.Register.A = r&0xFF
+		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Negative = r&0x80 != 0
+		cpu.Register.P.Carry = r >= 0
 	case "ANC":
 		cpu.Register.A &= data
 		cpu.Register.P.Zero = cpu.Register.A&0xFF == 0
