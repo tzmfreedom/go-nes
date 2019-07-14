@@ -212,35 +212,6 @@ func (cpu *Cpu) Run() int {
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
 	current = opCode
-	if true {
-	//if false || dbg || (cpu.Register.Y == 0 && cpu.Register.X == 0){
-		//dbg = true
-		fmt.Printf(
-			"%s\t%s\t%s\tA:%s\tX:%s\tY:%s\tP:%s\tSP:%s\tCYC:%d\tSL:%d\n",
-			strconv.FormatInt(pc, 16),
-			opCode.Base,
-			strconv.FormatInt(int64(opCode.Operand), 16),
-			strconv.FormatInt(int64(cpu.Register.A), 16),
-			strconv.FormatInt(int64(cpu.Register.X), 16),
-			strconv.FormatInt(int64(cpu.Register.Y), 16),
-			strconv.FormatInt(int64(cpu.Register.P.Int()), 16),
-			strconv.FormatInt(int64(cpu.Register.SP), 16),
-			0,
-			0,
-		)
-		//debug(opCodeRaw)
-		//debug(opCode)
-		//debug(cpu.Register)
-		//reader := bufio.NewReader(os.Stdin)
-		//cmd, _ := reader.ReadString('\n')
-		//if cmd == "s\n" {
-		//	debug(cpu.Read(cpu.Register.PC))
-		//	debug(cpu.Read(cpu.Register.PC+1))
-		//	debug(cpu.Read(cpu.Register.PC+2))
-		//	debug(cpu.Read(cpu.Register.PC+3))
-		//	debug(cpu.Read(cpu.Register.PC+4))
-		//}
-	}
 	cpu.Execute(opCode)
 	return cycles[opCodeRaw]
 }
