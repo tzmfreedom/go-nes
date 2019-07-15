@@ -101,9 +101,6 @@ func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
-		//if ppu.line < 241 && ppu.line%8 == 0 {
-		//	ppu.BuildBackGround()
-		//}
 		if ppu.line == 241 {
 			ppu.statusRegister |= 0x80
 			if ppu.controlRegister & 0x80 != 0 {
@@ -113,8 +110,6 @@ func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 		if ppu.line == 262 {
 			ppu.line = 0
 			ppu.statusRegister &= 0x7F
-			//background := ppu.background
-			//ppu.background = NewBackGround()
 			return true, ppu.getPallet(), ppu.sprites
 		}
 	}
@@ -137,57 +132,32 @@ func (ppu *PPU) buildSprites() {
 	}
 }
 
-//func (ppu *PPU) BuildBackGround() {
-//	y := (ppu.line - 1) / 8
-//	for x := 0; x < 32; x++ {
-//		tile := ppu.BuildTile(x, y)
-//		ppu.background.Add(x, y, tile)
-//	}
-//}
-
 func (ppu *PPU) getPallet() *Pallet {
 	return NewPallet(ppu.RAM[0x3F00:0x3F20])
 }
 
-//func (ppu *PPU) BuildTile(x, y int) *Tile {
-//	palletId := ppu.getPalletId(x, y)
-//	spriteId := ppu.getSpriteId(x, y)
-//	return &Tile{
-//		spriteId: spriteId,
-//		palletId: palletId,
-//	}
-//}
+func (ppu *PPU) getPalletId(x, y, offset int) int {
+	tmpX := x / 4
+	tmpY := y / 4
+	palletBlock := ppu.RAM[tmpX+tmpY*8+offset+0x03C0]
 
-func (ppu *PPU) getPalletId(x, y int) int {
-	offset := 0x23C0
-	if x + ppu.scrollX/8 >= 32 {
-		offset += 0x0400
-	}
-	if y + ppu.scrollY/8 >= 32 {
-		offset += 0x0800
-	}
-
-	tmpX := x / 2
-	tmpY := y / 2
-	palletBlock := ppu.RAM[tmpX+tmpY*8+offset]
-
-	var blockId uint
-	cmpX := (tmpX / 2) % 2
-	cmpY := (tmpY / 2) % 2
+	cmpX := (x/2) % 2
+	cmpY := (y/2) % 2
+	var operand uint
 	if cmpX == 0 {
 		if cmpY == 0 {
-			blockId = 1
+			operand = 0
 		} else {
-			blockId = 3
+			operand = 4
 		}
 	} else {
 		if cmpY == 0 {
-			blockId = 2
+			operand = 2
 		} else {
-			blockId = 4
+			operand = 6
 		}
 	}
-	return (palletBlock >> (blockId * 2)) & 3
+	return (palletBlock >> operand) & 0x03
 }
 
 func (ppu *PPU) getSpriteId(x, y int) int {

@@ -162,7 +162,7 @@ func (cpu *Cpu) ProcessNMI() {
 	cpu.PushStack(cpu.Register.P.Int())
 	cpu.Register.P.Interrupt = true
 	cpu.interrupts.Nmi = false
-	cpu.Register.PC = s*256 + f
+	cpu.Register.PC = s<<8 + f
 }
 
 func (cpu *Cpu) ProcessIrq() {

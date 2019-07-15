@@ -150,7 +150,7 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 
 				spriteId := nes.ppu.RAM[blockX+blockY*32+offset]
 				sprite := nes.sprites[bgIndex+spriteId]
-				palletId := nes.palletId(blockX, blockY, offset)
+				palletId := nes.ppu.getPalletId(blockX, blockY, offset)
 				c := pallet.getBackgroundColor(palletId, sprite.bitMap[j][i])
 				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
 				nes.renderer.DrawPoint(int32(x), int32(y))
@@ -199,29 +199,6 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	nes.renderer.Present()
 }
 
-func (nes *NES) palletId(x, y, offset int) int {
-	tmpX := x / 4
-	tmpY := y / 4
-	palletBlock := nes.ppu.RAM[tmpX+tmpY*8+offset+0x03C0]
-
-	cmpX := (x/2) % 2
-	cmpY := (y/2) % 2
-	var operand uint
-	if cmpX == 0 {
-		if cmpY == 0 {
-			operand = 0
-		} else {
-			operand = 4
-		}
-	} else {
-		if cmpY == 0 {
-			operand = 2
-		} else {
-			operand = 6
-		}
-	}
-	return (palletBlock >> operand) & 0x03
-}
 
 type Register struct {
 	A  int
