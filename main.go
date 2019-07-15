@@ -90,15 +90,15 @@ func (nes *NES) close() {
 func (nes *NES) run() error {
 	for {
 		cycle := nes.cpu.Run()
-		background, pallet, sprites := nes.ppu.Run(cycle * 3)
-		if background != nil {
-			nes.render(background, pallet, sprites)
+		vblank, pallet, sprites := nes.ppu.Run(cycle * 3)
+		if vblank {
+			nes.render(pallet, sprites)
 		}
 	}
 	return nil
 }
 
-func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*SpriteData) {
+func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	spIndex := 0
 	bgIndex := 0
 	if nes.ppu.controlRegister & 0x08 != 0 {
@@ -125,7 +125,7 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 			for y := 0; y < 240; y++ {
 				offset := baseOffset
 				if !nes.hMirror {
-					if x + nes.ppu.scrollX > 0xFF {
+					if x + nes.ppu.scrollX >= 256 {
 						if baseId%2 == 0 {
 							offset += 0x0400
 						} else {
@@ -134,7 +134,7 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 					}
 				}
 				if nes.hMirror {
-					if y + nes.ppu.scrollY > 240 {
+					if y + nes.ppu.scrollY >= 240 {
 						if baseId/2 == 0 {
 							offset += 0x0800
 						} else {
@@ -163,7 +163,10 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 			s := nes.sprites[spIndex+sprite.spriteId]
 			isVerticalReverse := sprite.attr & 0x80 != 0
 			isHoriozntalReverse := sprite.attr & 0x40 != 0
-			//isPriority := sprite.attr & 0x20
+			isPriority := sprite.attr & 0x20 != 0
+			if isPriority {
+				continue
+			}
 			palletId := sprite.attr & 0x03
 			for y, line := range s.bitMap {
 				for x, bit := range line {
@@ -237,15 +240,15 @@ func (b *BackGround) Add(x, y int, tile *Tile) {
 	b.tiles[y][x] = tile
 }
 
-func NewBackGround() *BackGround {
-	tiles := make([][]*Tile, 30)
-	for i := 0; i < 30; i++ {
-		tiles[i] = make([]*Tile, 32)
-	}
-	return &BackGround{
-		tiles: tiles,
-	}
-}
+//func NewBackGround() *BackGround {
+//	tiles := make([][]*Tile, 30)
+//	for i := 0; i < 30; i++ {
+//		tiles[i] = make([]*Tile, 32)
+//	}
+//	return &BackGround{
+//		tiles: tiles,
+//	}
+//}
 
 type Tile struct {
 	spriteId int

@@ -22,7 +22,6 @@ type PPU struct {
 func NewPPU(interrupts *Interrupts) *PPU {
 	return &PPU{
 		RAM:        make([]int, 0x4000),
-		background: NewBackGround(),
 		spriteRAM:  make([]int, 0x100),
 		interrupts: interrupts,
 	}
@@ -94,7 +93,7 @@ func (ppu *PPU) Write(index, data int) {
 	}
 }
 
-func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
+func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 	ppu.cycle += cycle
 	if ppu.line == 0 {
 		ppu.buildSprites()
@@ -102,9 +101,9 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
-		if ppu.line < 241 && ppu.line%8 == 0 {
-			ppu.BuildBackGround()
-		}
+		//if ppu.line < 241 && ppu.line%8 == 0 {
+		//	ppu.BuildBackGround()
+		//}
 		if ppu.line == 241 {
 			ppu.statusRegister |= 0x80
 			if ppu.controlRegister & 0x80 != 0 {
@@ -114,12 +113,12 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
 		if ppu.line == 262 {
 			ppu.line = 0
 			ppu.statusRegister &= 0x7F
-			background := ppu.background
-			ppu.background = NewBackGround()
-			return background, ppu.getPallet(), ppu.sprites
+			//background := ppu.background
+			//ppu.background = NewBackGround()
+			return true, ppu.getPallet(), ppu.sprites
 		}
 	}
-	return nil, nil, nil
+	return false, nil, nil
 }
 
 func (ppu *PPU) buildSprites() {
@@ -138,26 +137,26 @@ func (ppu *PPU) buildSprites() {
 	}
 }
 
-func (ppu *PPU) BuildBackGround() {
-	y := (ppu.line - 1) / 8
-	for x := 0; x < 32; x++ {
-		tile := ppu.BuildTile(x, y)
-		ppu.background.Add(x, y, tile)
-	}
-}
+//func (ppu *PPU) BuildBackGround() {
+//	y := (ppu.line - 1) / 8
+//	for x := 0; x < 32; x++ {
+//		tile := ppu.BuildTile(x, y)
+//		ppu.background.Add(x, y, tile)
+//	}
+//}
 
 func (ppu *PPU) getPallet() *Pallet {
 	return NewPallet(ppu.RAM[0x3F00:0x3F20])
 }
 
-func (ppu *PPU) BuildTile(x, y int) *Tile {
-	palletId := ppu.getPalletId(x, y)
-	spriteId := ppu.getSpriteId(x, y)
-	return &Tile{
-		spriteId: spriteId,
-		palletId: palletId,
-	}
-}
+//func (ppu *PPU) BuildTile(x, y int) *Tile {
+//	palletId := ppu.getPalletId(x, y)
+//	spriteId := ppu.getSpriteId(x, y)
+//	return &Tile{
+//		spriteId: spriteId,
+//		palletId: palletId,
+//	}
+//}
 
 func (ppu *PPU) getPalletId(x, y int) int {
 	offset := 0x23C0
