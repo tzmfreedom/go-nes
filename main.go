@@ -99,6 +99,8 @@ func (nes *NES) run() error {
 }
 
 func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
+	start := time.Now().UnixNano()
+
 	spIndex := 0
 	bgIndex := 0
 	if nes.ppu.controlRegister & 0x08 != 0 {
@@ -107,32 +109,22 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	if nes.ppu.controlRegister & 0x10 != 0 {
 		bgIndex = 0x100 // = 0x1000/16
 	}
-	start := time.Now().UnixNano()
-	baseId := nes.ppu.controlRegister & 0x03
-	var baseOffset int
-	switch baseId {
-	case 0:
-		baseOffset = 0x2000
-	case 1:
-		baseOffset = 0x2400
-	case 2:
-		baseOffset = 0x2800
-	case 3:
-		baseOffset = 0x2C00
-	}
 	if nes.ppu.controlRegister2 & 0x08 != 0 {
+		baseId := nes.ppu.controlRegister & 0x03
+		var baseOffset int
+		switch baseId {
+		case 0:
+			baseOffset = 0x2000
+		case 1:
+			baseOffset = 0x2400
+		case 2:
+			baseOffset = 0x2800
+		case 3:
+			baseOffset = 0x2C00
+		}
 		for x := 0; x < 256; x++ {
 			for y := 0; y < 240; y++ {
 				offset := baseOffset
-				if !nes.hMirror {
-					if x + nes.ppu.scrollX >= 256 {
-						if baseId%2 == 0 {
-							offset += 0x0400
-						} else {
-							offset -= 0x0400
-						}
-					}
-				}
 				if nes.hMirror {
 					if y + nes.ppu.scrollY >= 240 {
 						if baseId/2 == 0 {
@@ -141,12 +133,22 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 							offset -= 0x0800
 						}
 					}
+				} else {
+					if x + nes.ppu.scrollX >= 256 {
+						if baseId%2 == 0 {
+							offset += 0x0400
+						} else {
+							offset -= 0x0400
+						}
+					}
 				}
 
-				blockX := ((x+nes.ppu.scrollX)%256)/8
-				blockY := ((y+nes.ppu.scrollY)%240)/8
-				i := (x+nes.ppu.scrollX)%8
-				j := (y+nes.ppu.scrollY)%8
+				scrollX := x+nes.ppu.scrollX
+				scrollY := y+nes.ppu.scrollY
+				blockX := (scrollX%256)/8
+				blockY := (scrollY%240)/8
+				i := scrollX%8
+				j := scrollY%8
 
 				spriteId := nes.ppu.RAM[blockX+blockY*32+offset]
 				sprite := nes.sprites[bgIndex+spriteId]
@@ -154,6 +156,10 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 				c := pallet.getBackgroundColor(palletId, sprite.bitMap[j][i])
 				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
 				nes.renderer.DrawPoint(int32(x), int32(y))
+				if x == 255 && y == 239 {
+					debug(baseId, baseOffset, x,y, i, j, nes.ppu.scrollX, nes.ppu.scrollY, scrollX, scrollY)
+					//debug(spriteId)
+				}
 			}
 		}
 	}
@@ -188,7 +194,7 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	nes.frame++
 	if nes.frame == 60 {
 		nes.frame -= 60
-		if nes.time > 0 {
+		if nes.time > 0 && false {
 			debug(sprites[0:2])
 			debug(end-start)
 			debug((time.Now().UnixNano() - nes.time)/1000000000)
