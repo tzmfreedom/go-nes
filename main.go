@@ -98,41 +98,48 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 	spIndex := 0
 	bgIndex := 0
 	if nes.ppu.controlRegister & 0x08 != 0 {
-		spIndex = 0x1000/16
+		spIndex = 0x100 // = 0x1000/16
 	}
 	if nes.ppu.controlRegister & 0x10 != 0 {
-		bgIndex = 0x1000/16
+		bgIndex = 0x100 // = 0x1000/16
 	}
 	start := time.Now().UnixNano()
-	for i, line := range background.tiles {
-		for j, tile := range line {
-			sprite := nes.sprites[bgIndex+tile.spriteId]
-			for y, line := range sprite.bitMap {
-				for x, bit := range line {
-					c := pallet.getBackgroundColor(tile.palletId, bit)
-					nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
-					nes.renderer.DrawPoint(int32(j*SpriteSize+x), int32(i*SpriteSize+y))
+	if nes.ppu.controlRegister2 & 0x08 != 0 {
+		for i, line := range background.tiles {
+			for j, tile := range line {
+				if tile != nil {
+					sprite := nes.sprites[bgIndex+tile.spriteId]
+					for y, line := range sprite.bitMap {
+						for x, bit := range line {
+							c := pallet.getBackgroundColor(tile.palletId, bit)
+							nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+							nes.renderer.DrawPoint(int32(j*SpriteSize+x), int32(i*SpriteSize+y))
+						}
+					}
 				}
 			}
 		}
 	}
-	for _, sprite := range sprites	{
-		s := nes.sprites[spIndex+sprite.spriteId]
-		isVerticalReverse := sprite.attr & 0x80 != 0
-		isHoriozntalReverse := sprite.attr & 0x40 != 0
-		//isPriority := sprite.attr & 0x20
-		palletId := sprite.attr & 0x03
-		for y, line := range s.bitMap {
-			for x, bit := range line {
-				if isVerticalReverse {
-					y = SpriteSize - y
+
+	if nes.ppu.controlRegister2 & 0x10 != 0 {
+		for _, sprite := range sprites	{
+			s := nes.sprites[spIndex+sprite.spriteId]
+			isVerticalReverse := sprite.attr & 0x80 != 0
+			isHoriozntalReverse := sprite.attr & 0x40 != 0
+			//isPriority := sprite.attr & 0x20
+			palletId := sprite.attr & 0x03
+			for y, line := range s.bitMap {
+				for x, bit := range line {
+					if isVerticalReverse {
+						y = SpriteSize - y
+					}
+					if isHoriozntalReverse {
+						x = SpriteSize - x
+					}
+					c := pallet.getSpriteColor(palletId, bit)
+					nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+					nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
 				}
-				if isHoriozntalReverse {
-					x = SpriteSize - x
-				}
-				c := pallet.getSpriteColor(palletId, bit)
-				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
-				nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
 			}
 		}
 	}

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
-	"strconv"
 )
 
 type Cpu struct {
@@ -35,13 +33,6 @@ func NewCpu(prgRom []byte) *Cpu {
 }
 
 func (cpu *Cpu) Write(index int, value int) {
-	if index == 0x11 {
-		debug("hogehoge", value)
-	}
-	if index == 0x00 {
-		debug("fugafuga", value)
-	}
-
 	if index < 0x0800 {
 		cpu.RAM[index] = value
 	} else if index < 0x2000 {
@@ -153,10 +144,6 @@ func (cpu *Cpu) Reset() {
 		f = cpu.Read(0xFFFC)
 		s = cpu.Read(0xFFFD)
 	}
-	debug(strconv.FormatInt(int64(s*256 + f), 16))
-	//cpu.Register.P.Set(0x24)
-	//cpu.Register.SP = 0xFD
-	//cpu.Register.PC = 0xC000
 	cpu.Register.PC = s*256 + f
 }
 
@@ -207,7 +194,6 @@ func (cpu *Cpu) Run() int {
 		cpu.ProcessNMI()
 	}
 
-	pc := int64(cpu.Register.PC)
 	opCodeRaw := cpu.Fetch()
 	opCode := opCodeList[opCodeRaw]
 	opCode.FetchOperand(cpu)
@@ -249,7 +235,6 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		} else {
 			data = cpu.Read(opCode.Operand)
 		}
-		debug(cpu.Register.A, data)
 		r := cpu.Register.A & data
 		cpu.Register.P.Negative = r&0x80 != 0
 		cpu.Register.P.Zero = r == 0
