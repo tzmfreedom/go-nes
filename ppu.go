@@ -13,9 +13,9 @@ type PPU struct {
 	controlRegister2 int
 	statusRegister int
 	spriteMemAddr int
-	isWriteScrollV bool
-	scrollH int
-	scrollV int
+	isWriteScrollX bool
+	scrollX int
+	scrollY int
 	interrupts *Interrupts
 }
 
@@ -35,7 +35,10 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0001:
 		// no action
 	case 0x0002:
-		return ppu.statusRegister
+		r := ppu.statusRegister
+		ppu.statusRegister &= 0x7F
+		ppu.isWriteScrollX = false
+		return r
 	case 0x0003:
 		// no action
 	case 0x0004:
@@ -66,12 +69,12 @@ func (ppu *PPU) Write(index, data int) {
 		ppu.spriteRAM[ppu.spriteMemAddr] = data
 		ppu.spriteMemAddr += 0x01
 	case 0x0005:
-		if ppu.isWriteScrollV {
-			ppu.scrollH = data
-			ppu.isWriteScrollV = false
+		if ppu.isWriteScrollX {
+			ppu.scrollY = data
+			ppu.isWriteScrollX = false
 		} else {
-			ppu.scrollV = data
-			ppu.isWriteScrollV = true
+			ppu.scrollX = data
+			ppu.isWriteScrollX = true
 		}
 	case 0x0006:
 		if ppu.isWriteHigher {
@@ -83,7 +86,11 @@ func (ppu *PPU) Write(index, data int) {
 		}
 	case 0x0007:
 		ppu.RAM[ppu.addr] = data
-		ppu.addr += 0x01 // TODO: impl
+		if ppu.controlRegister&0x04 == 0 {
+			ppu.addr += 0x01
+		} else {
+			ppu.addr += 0x20
+		}
 	}
 }
 
@@ -95,7 +102,7 @@ func (ppu *PPU) Run(cycle int) (*BackGround, *Pallet, []*SpriteData) {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
-		if ppu.line < 240 && (ppu.line-1)%8 == 0 {
+		if ppu.line < 241 && ppu.line%8 == 0 {
 			ppu.BuildBackGround()
 		}
 		if ppu.line == 241 {
@@ -153,9 +160,17 @@ func (ppu *PPU) BuildTile(x, y int) *Tile {
 }
 
 func (ppu *PPU) getPalletId(x, y int) int {
+	offset := 0x23C0
+	if x + ppu.scrollX/8 >= 32 {
+		offset += 0x0400
+	}
+	if y + ppu.scrollY/8 >= 32 {
+		offset += 0x0800
+	}
+
 	tmpX := x / 2
 	tmpY := y / 2
-	palletBlock := ppu.RAM[tmpX+tmpY*8+0x23C0]
+	palletBlock := ppu.RAM[tmpX+tmpY*8+offset]
 
 	var blockId uint
 	cmpX := (tmpX / 2) % 2
@@ -177,7 +192,15 @@ func (ppu *PPU) getPalletId(x, y int) int {
 }
 
 func (ppu *PPU) getSpriteId(x, y int) int {
-	return ppu.RAM[x+y*32+0x2000]
+	offset := 0x2000
+	if x + ppu.scrollX/8 >= 32 {
+		offset += 0x0400
+	}
+	if y + ppu.scrollY/8 >= 32 {
+		offset += 0x0800
+	}
+
+	return ppu.RAM[x+y*32+offset]
 }
 
 type RGB struct {

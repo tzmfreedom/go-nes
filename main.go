@@ -26,8 +26,10 @@ func main() {
 	fmt.Printf("PRG SIZE: %d => %d\n", prgSize, len(prgRom))
 	fmt.Printf("CHR SIZE: %d => %d\n", chrSize, len(chrRom))
 
+	hMirror := b[6]&0x01 == 0
+
 	cpu := NewCpu(prgRom)
-	nes := NewNES(cpu, chrRom)
+	nes := NewNES(cpu, chrRom, hMirror)
 	nes.run()
 	defer nes.close()
 }
@@ -43,9 +45,10 @@ type NES struct {
 	window     *sdl.Window
 	frame      int
 	time       int64
+	hMirror     bool
 }
 
-func NewNES(cpu *Cpu, chrRom []byte) *NES {
+func NewNES(cpu *Cpu, chrRom []byte, hMirror bool) *NES {
 	sprites := make([]*Sprite, 512)
 	for i := 0; i < 512; i++ {
 		index := i * 16
@@ -74,6 +77,7 @@ func NewNES(cpu *Cpu, chrRom []byte) *NES {
 		sprites: sprites,
 		renderer: renderer,
 		window: window,
+		hMirror: hMirror,
 	}
 }
 
@@ -104,19 +108,52 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 		bgIndex = 0x100 // = 0x1000/16
 	}
 	start := time.Now().UnixNano()
+	baseId := nes.ppu.controlRegister & 0x03
+	var baseOffset int
+	switch baseId {
+	case 0:
+		baseOffset = 0x2000
+	case 1:
+		baseOffset = 0x2400
+	case 2:
+		baseOffset = 0x2800
+	case 3:
+		baseOffset = 0x2C00
+	}
 	if nes.ppu.controlRegister2 & 0x08 != 0 {
-		for i, line := range background.tiles {
-			for j, tile := range line {
-				if tile != nil {
-					sprite := nes.sprites[bgIndex+tile.spriteId]
-					for y, line := range sprite.bitMap {
-						for x, bit := range line {
-							c := pallet.getBackgroundColor(tile.palletId, bit)
-							nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
-							nes.renderer.DrawPoint(int32(j*SpriteSize+x), int32(i*SpriteSize+y))
+		for x := 0; x < 256; x++ {
+			for y := 0; y < 240; y++ {
+				offset := baseOffset
+				if !nes.hMirror {
+					if x + nes.ppu.scrollX > 0xFF {
+						if baseId%2 == 0 {
+							offset += 0x0400
+						} else {
+							offset -= 0x0400
 						}
 					}
 				}
+				if nes.hMirror {
+					if y + nes.ppu.scrollY > 240 {
+						if baseId/2 == 0 {
+							offset += 0x0800
+						} else {
+							offset -= 0x0800
+						}
+					}
+				}
+
+				blockX := ((x+nes.ppu.scrollX)%256)/8
+				blockY := ((y+nes.ppu.scrollY)%240)/8
+				i := (x+nes.ppu.scrollX)%8
+				j := (y+nes.ppu.scrollY)%8
+
+				spriteId := nes.ppu.RAM[blockX+blockY*32+offset]
+				sprite := nes.sprites[bgIndex+spriteId]
+				palletId := nes.palletId(blockX, blockY, offset)
+				c := pallet.getBackgroundColor(palletId, sprite.bitMap[j][i])
+				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+				nes.renderer.DrawPoint(int32(x), int32(y))
 			}
 		}
 	}
@@ -157,6 +194,30 @@ func (nes *NES) render(background *BackGround, pallet *Pallet, sprites []*Sprite
 		nes.time = time.Now().UnixNano()
 	}
 	nes.renderer.Present()
+}
+
+func (nes *NES) palletId(x, y, offset int) int {
+	tmpX := x / 4
+	tmpY := y / 4
+	palletBlock := nes.ppu.RAM[tmpX+tmpY*8+offset+0x03C0]
+
+	cmpX := (x/2) % 2
+	cmpY := (y/2) % 2
+	var operand uint
+	if cmpX == 0 {
+		if cmpY == 0 {
+			operand = 0
+		} else {
+			operand = 4
+		}
+	} else {
+		if cmpY == 0 {
+			operand = 2
+		} else {
+			operand = 6
+		}
+	}
+	return (palletBlock >> operand) & 0x03
 }
 
 type Register struct {
@@ -225,7 +286,7 @@ func (r *StatusRegister) Set(v int) {
 }
 
 func debug(args ...interface{}) {
-	if false {
+	if true {
 		pp.Println(args...)
 	}
 }
