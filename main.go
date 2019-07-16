@@ -157,7 +157,7 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
 				nes.renderer.DrawPoint(int32(x), int32(y))
 				if x == 255 && y == 239 {
-					debug(baseId, baseOffset, x,y, i, j, nes.ppu.scrollX, nes.ppu.scrollY, scrollX, scrollY)
+					//debug(baseId, baseOffset, x,y, i, j, nes.ppu.scrollX, nes.ppu.scrollY, scrollX, scrollY)
 					//debug(spriteId)
 				}
 			}

@@ -8,12 +8,11 @@ type PPU struct {
 	spriteRAM     []int
 	sprites       []*SpriteData
 	addr          int
-	isWriteHigher bool
 	controlRegister int
 	controlRegister2 int
 	statusRegister int
 	spriteMemAddr int
-	isWriteScrollX bool
+	writeToggle bool
 	scrollX int
 	scrollY int
 	interrupts *Interrupts
@@ -36,7 +35,7 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0002:
 		r := ppu.statusRegister
 		ppu.statusRegister &= 0x7F
-		ppu.isWriteScrollX = false
+		ppu.writeToggle = false
 		return r
 	case 0x0003:
 		// no action
@@ -68,20 +67,24 @@ func (ppu *PPU) Write(index, data int) {
 		ppu.spriteRAM[ppu.spriteMemAddr] = data
 		ppu.spriteMemAddr += 0x01
 	case 0x0005:
-		if ppu.isWriteScrollX {
-			ppu.scrollY = data
-			ppu.isWriteScrollX = false
+		if ppu.writeToggle {
+			if data < 240 {
+				ppu.scrollY = data
+			} else {
+				ppu.scrollY = 0
+			}
+			ppu.writeToggle = false
 		} else {
 			ppu.scrollX = data
-			ppu.isWriteScrollX = true
+			ppu.writeToggle = true
 		}
 	case 0x0006:
-		if ppu.isWriteHigher {
+		if ppu.writeToggle {
 			ppu.addr += data
-			ppu.isWriteHigher = false
+			ppu.writeToggle = false
 		} else {
 			ppu.addr = data * 256
-			ppu.isWriteHigher = true
+			ppu.writeToggle = true
 		}
 	case 0x0007:
 		ppu.RAM[ppu.addr] = data
