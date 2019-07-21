@@ -49,10 +49,13 @@ type NES struct {
 }
 
 func NewNES(cpu *Cpu, chrRom []byte, hMirror bool) *NES {
-	sprites := make([]*Sprite, 512)
-	for i := 0; i < 512; i++ {
-		index := i * 16
-		sprites[i] = NewSprite(chrRom[index : index+16])
+	sprites := []*Sprite{}
+	if len(chrRom) > 0 {
+		sprites = make([]*Sprite, 512)
+		for i := 0; i < 512; i++ {
+			index := i * 16
+			sprites[i] = NewSprite(chrRom[index : index+16])
+		}
 	}
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
@@ -109,7 +112,7 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	if nes.ppu.controlRegister & 0x10 != 0 {
 		bgIndex = 0x100 // = 0x1000/16
 	}
-	if nes.ppu.controlRegister2 & 0x08 != 0 {
+	if len(nes.sprites) > 0 && nes.ppu.controlRegister2 & 0x08 != 0 {
 		baseId := nes.ppu.controlRegister & 0x03
 		var baseOffset int
 		switch baseId {
@@ -164,11 +167,11 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 		}
 	}
 
-	if nes.ppu.controlRegister2 & 0x10 != 0 {
+	if len(nes.sprites) > 0 && nes.ppu.controlRegister2 & 0x10 != 0 {
 		for _, sprite := range sprites	{
 			s := nes.sprites[spIndex+sprite.spriteId]
 			isVerticalReverse := sprite.attr & 0x80 != 0
-			isHoriozntalReverse := sprite.attr & 0x40 != 0
+			isHorizontalReverse := sprite.attr & 0x40 != 0
 			isPriority := sprite.attr & 0x20 != 0
 			if isPriority {
 				continue
@@ -179,12 +182,14 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 					if isVerticalReverse {
 						y = SpriteSize - y
 					}
-					if isHoriozntalReverse {
+					if isHorizontalReverse {
 						x = SpriteSize - x
 					}
-					c := pallet.getSpriteColor(palletId, bit)
-					nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
-					nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
+					if palletId != 0 || bit != 0 {
+						c := pallet.getSpriteColor(palletId, bit)
+						nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
+						nes.renderer.DrawPoint(int32(sprite.x+x), int32(sprite.y+y))
+					}
 				}
 			}
 		}

@@ -4,7 +4,6 @@ type PPU struct {
 	RAM           []int
 	cycle         int
 	line          int
-	background    *BackGround
 	spriteRAM     []int
 	sprites       []*SpriteData
 	addr          int
@@ -40,14 +39,18 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0003:
 		// no action
 	case 0x0004:
-		// no action
+		return ppu.spriteRAM[ppu.spriteMemAddr]
 	case 0x0005:
 		// no action
 	case 0x0006:
 		// no action
 	case 0x0007:
 		data := ppu.RAM[ppu.addr]
-		ppu.addr += 0x01
+		if ppu.controlRegister&0x04 == 0 {
+			ppu.addr += 0x01
+		} else {
+			ppu.addr += 0x20
+		}
 		return data
 	}
 	return 0
@@ -65,7 +68,7 @@ func (ppu *PPU) Write(index, data int) {
 		ppu.spriteMemAddr = data
 	case 0x0004:
 		ppu.spriteRAM[ppu.spriteMemAddr] = data
-		ppu.spriteMemAddr += 0x01
+		ppu.spriteMemAddr = (ppu.spriteMemAddr+1)&0xFF
 	case 0x0005:
 		if ppu.writeToggle {
 			if data < 240 {
@@ -83,16 +86,24 @@ func (ppu *PPU) Write(index, data int) {
 			ppu.addr += data
 			ppu.writeToggle = false
 		} else {
-			ppu.addr = data * 256
+			ppu.addr = data << 8
 			ppu.writeToggle = true
 		}
 	case 0x0007:
-		ppu.RAM[ppu.addr] = data
+		addr := ppu.addr
+		if ppu.addr == 0x3F10 ||
+			ppu.addr == 0x3F14 ||
+			ppu.addr == 0x3F18 ||
+			ppu.addr == 0x3F1C {
+			addr -= 0x3F10
+		}
+		ppu.RAM[addr] = data
 		if ppu.controlRegister&0x04 == 0 {
 			ppu.addr += 0x01
 		} else {
 			ppu.addr += 0x20
 		}
+		ppu.addr &= 0x3FFF
 	}
 }
 
@@ -104,6 +115,9 @@ func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
+		if ppu.line == 1 {
+			ppu.controlRegister2 |= 0x40
+		}
 		if ppu.line == 241 {
 			ppu.statusRegister |= 0x80
 			if ppu.controlRegister & 0x80 != 0 {
@@ -113,6 +127,7 @@ func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 		if ppu.line == 262 {
 			ppu.line = 0
 			ppu.statusRegister &= 0x7F
+			ppu.controlRegister2 &= 0xBF
 			return true, ppu.getPallet(), ppu.sprites
 		}
 	}
@@ -199,11 +214,11 @@ func NewPallet(src []int) *Pallet {
 }
 
 func (p *Pallet) getBackgroundColor(palletId int, bit int) *RGB {
-	return colors[p.src[palletId*4+bit]]
+	return colors[p.src[palletId<<2+bit]]
 }
 
 func (p *Pallet) getSpriteColor(palletId int, bit int) *RGB {
-	return colors[p.src[0x10+palletId*4+bit]]
+	return colors[p.src[0x10+palletId<<2+bit]]
 }
 
 type SpriteData struct {
