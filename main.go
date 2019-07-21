@@ -206,10 +206,75 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 			debug(60*1000000000/(time.Now().UnixNano() - nes.time))
 		}
 		nes.time = time.Now().UnixNano()
+		//debug(nes.cpu.Read(0x6000))
+		//debugPPU(nes, pallet)
+		//debugSprite(sprites)
 	}
 	nes.renderer.Present()
 }
 
+func debugPPU(nes *NES, pallet *Pallet) {
+	//spIndex := 0
+	//bgIndex := 0
+	//if nes.ppu.controlRegister & 0x08 != 0 {
+	//	spIndex = 0x100 // = 0x1000/16
+	//}
+	//if nes.ppu.controlRegister & 0x10 != 0 {
+	//	bgIndex = 0x100 // = 0x1000/16
+	//}
+	baseId := nes.ppu.controlRegister & 0x03
+	var baseOffset int
+	switch baseId {
+	case 0:
+		baseOffset = 0x2000
+	case 1:
+		baseOffset = 0x2400
+	case 2:
+		baseOffset = 0x2800
+	case 3:
+		baseOffset = 0x2C00
+	}
+	for y := 0; y < 240; y++ {
+		for x := 0; x < 256; x++ {
+			blockX := x/8
+			blockY := y/8
+			//i := scrollX%8
+			//j := scrollY%8
+
+			spriteId := nes.ppu.RAM[blockX+blockY*32+baseOffset]
+			//sprite := nes.sprites[bgIndex+spriteId]
+			//palletId := nes.ppu.getPalletId(blockX, blockY, 0)
+			//c := pallet.getBackgroundColor(palletId, sprite.bitMap[j][i])
+			if x%8 == 0 && y%8 == 0 {
+				fmt.Print(spriteId)
+				fmt.Print(",")
+				if spriteId == 200 {
+					debug(blockX+blockY*32+baseOffset)
+				}
+			}
+		}
+		if y%8 == 0 {
+			fmt.Println()
+		}
+	}
+	fmt.Println()
+}
+
+func debugSprite(sprites []*SpriteData) {
+	//spIndex := 0
+	//bgIndex := 0
+	//if nes.ppu.controlRegister & 0x08 != 0 {
+	//	spIndex = 0x100 // = 0x1000/16
+	//}
+	//if nes.ppu.controlRegister & 0x10 != 0 {
+	//	bgIndex = 0x100 // = 0x1000/16
+	//}
+	for _, sprite := range sprites {
+		fmt.Print(sprite.attr)
+		fmt.Print(",")
+	}
+	fmt.Println()
+}
 
 type Register struct {
 	A  int

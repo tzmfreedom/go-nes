@@ -14,6 +14,8 @@ type Cpu struct {
 	GamePad  *GamePad
 	GamePadIndex int
 	interrupts *Interrupts
+	isWriteResetFlag bool
+	ExtRAM   []int
 }
 
 func NewCpu(prgRom []byte) *Cpu {
@@ -27,6 +29,7 @@ func NewCpu(prgRom []byte) *Cpu {
 		GamePad: &GamePad{},
 		PPU: NewPPU(interrupts),
 		interrupts: interrupts,
+		ExtRAM: make([]int, 0x2000),
 	}
 	cpu.Reset()
 	return cpu
@@ -35,8 +38,12 @@ func NewCpu(prgRom []byte) *Cpu {
 func (cpu *Cpu) Write(index int, value int) {
 	if index < 0x0800 {
 		cpu.RAM[index] = value
+	} else if index < 0x1000 {
+		cpu.RAM[index-0x800] = value
+	} else if index < 0x1800 {
+		cpu.RAM[index-0x1000] = value
 	} else if index < 0x2000 {
-		cpu.RAM[index-0x0800] = value
+		cpu.RAM[index-0x1800] = value
 	} else if index < 0x2008 {
 		cpu.PPU.Write(index-0x2000, value)
 	} else if index < 0x4000 {
@@ -51,9 +58,12 @@ func (cpu *Cpu) Write(index int, value int) {
 			cpu.PPU.spriteRAM[i+2] = cpu.RAM[base+2]
 			cpu.PPU.spriteRAM[i+3] = cpu.RAM[base+3]
 		}
+		cpu.PPU.cycle += 514*3
 	} else if index == 0x4016 {
 		// key input
-		// TODO: impl
+		//if !cpu.isWriteResetFlag && value == 1 {
+		//	cpu.isWriteResetFlag = true
+		//}
 		if value == 0 {
 			cpu.GamePadIndex = 0
 			cpu.GamePad.Reset()
@@ -63,7 +73,7 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x6000 {
 
 	} else if index < 0x8000 {
-
+		cpu.ExtRAM[index-0x6000] = value
 	} else {
 		if len(cpu.PrgROM) == 0x8000 {
 			cpu.PrgROM[index-0x8000] = byte(value)
@@ -77,8 +87,14 @@ func (cpu *Cpu) Read(index int) int {
 	if index < 0x0800 {
 		return cpu.RAM[index]
 	}
-	if index < 0x2000 {
+	if index < 0x1000 {
 		return cpu.RAM[index-0x800]
+	}
+	if index < 0x1800 {
+		return cpu.RAM[index-0x1000]
+	}
+	if index < 0x2000 {
+		return cpu.RAM[index-0x1800]
 	}
 	if index < 0x2008 {
 		return cpu.PPU.Read(index - 0x2000)
@@ -117,13 +133,15 @@ func (cpu *Cpu) Read(index int) int {
 		return result
 	}
 	if index < 0x4020 {
-
+		// TODO: impl
+		return 0
 	}
 	if index < 0x6000 {
-
+		// TODO: impl
+		return 0
 	}
 	if index < 0x8000 {
-
+		return cpu.ExtRAM[index-0x6000]
 	}
 	if index >= 0xC000 {
 		if len(cpu.PrgROM) == 0x8000 {

@@ -39,6 +39,9 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0003:
 		// no action
 	case 0x0004:
+		if ppu.spriteMemAddr%4 == 2 {
+			return ppu.spriteRAM[ppu.spriteMemAddr]&0xE3
+		}
 		return ppu.spriteRAM[ppu.spriteMemAddr]
 	case 0x0005:
 		// no action
@@ -65,7 +68,7 @@ func (ppu *PPU) Write(index, data int) {
 	case 0x0002:
 		// no action
 	case 0x0003:
-		ppu.spriteMemAddr = data
+		ppu.spriteMemAddr = data&0xFF
 	case 0x0004:
 		ppu.spriteRAM[ppu.spriteMemAddr] = data
 		ppu.spriteMemAddr = (ppu.spriteMemAddr+1)&0xFF
@@ -97,6 +100,11 @@ func (ppu *PPU) Write(index, data int) {
 			ppu.addr == 0x3F1C {
 			addr -= 0x3F10
 		}
+		//if addr == 8683 && data == 199 {
+		//	debug(data)
+		//	debug(current)
+		//}
+		//debug(addr)
 		ppu.RAM[addr] = data
 		if ppu.controlRegister&0x04 == 0 {
 			ppu.addr += 0x01
