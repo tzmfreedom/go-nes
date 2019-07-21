@@ -180,6 +180,21 @@ func (cpu *Cpu) ProcessIrq() {
 	cpu.Register.PC = s*256 + f
 }
 
+func (cpu *Cpu) ProcessBrk() {
+	var f, s int
+	// TODO: impl
+	if len(cpu.PrgROM) == 0x4000 {
+		f = cpu.Read(0xBFFE)
+		s = cpu.Read(0xBFFF)
+	} else {
+		f = cpu.Read(0xFFFE)
+		s = cpu.Read(0xFFFF)
+	}
+	cpu.Register.P.Break = false
+	cpu.Register.P.Interrupt = true
+	cpu.Register.PC = s*256 + f
+}
+
 func (cpu *Cpu) Fetch() int {
 	ret := cpu.Read(cpu.Register.PC)
 	cpu.Register.PC++
@@ -192,6 +207,9 @@ var current *OpCode
 func (cpu *Cpu) Run() int {
 	if cpu.interrupts.Nmi {
 		cpu.ProcessNMI()
+	}
+	if cpu.Register.P.Break {
+		// cpu.ProcessBrk()
 	}
 
 	opCodeRaw := cpu.Fetch()
@@ -380,6 +398,11 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		h := cpu.PopStack()
 		cpu.Register.PC = h<<8 + l + 1
 	case "BRK":
+		//debug(1)
+		//if !cpu.Register.P.Interrupt {
+		//	cpu.Register.P.Break = true
+		//	cpu.Register.PC++
+		//}
 	case "RTI":
 		status := cpu.PopStack()
 		l := cpu.PopStack()
@@ -519,6 +542,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "PHP":
+		//cpu.Register.P.Break = true
 		cpu.PushStack(cpu.Register.P.Int())
 	case "PLP":
 		cpu.Register.P.Set(cpu.PopStack())
@@ -626,15 +650,20 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		panic("not impl")
 	case "LAS":
 		panic("not impl")
+	case "STP":
+		// halt
+	default:
+		debug(opCode)
+		panic("not impl")
 	}
 }
 
 func (cpu *Cpu) PushStack(value int) {
 	cpu.RAM[0x100+cpu.Register.SP] = value
-	cpu.Register.SP--
+	cpu.Register.SP = (cpu.Register.SP-1)&0xFF
 }
 
 func (cpu *Cpu) PopStack() int {
-	cpu.Register.SP++
+	cpu.Register.SP = (cpu.Register.SP+1)&0xFF
 	return cpu.RAM[0x100+cpu.Register.SP]
 }
