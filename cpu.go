@@ -75,10 +75,14 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x8000 {
 		cpu.ExtRAM[index-0x6000] = value
 	} else {
-		if len(cpu.PrgROM) == 0x8000 {
-			cpu.PrgROM[index-0x8000] = byte(value)
+		if index >= 0xC000 {
+			if len(cpu.PrgROM) == 0x8000 {
+				cpu.PrgROM[index-0x8000] = byte(value)
+			} else {
+				cpu.PrgROM[index-0xC000] = byte(value)
+			}
 		} else {
-			cpu.PrgROM[index-0xC000] = byte(value)
+			cpu.PrgROM[index-0x8000] = byte(value)
 		}
 	}
 }
@@ -208,6 +212,9 @@ func (cpu *Cpu) ProcessBrk() {
 		f = cpu.Read(0xFFFE)
 		s = cpu.Read(0xFFFF)
 	}
+	cpu.PushStack((cpu.Register.PC >> 8) & 0xff)
+	cpu.PushStack(cpu.Register.PC & 0xff)
+	cpu.PushStack(cpu.Register.P.Int())
 	cpu.Register.P.Break = false
 	cpu.Register.P.Interrupt = true
 	cpu.Register.PC = s*256 + f
@@ -320,12 +327,12 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		c := data&0x01 != 0
 		r := data>>1
 		if opCode.Mode == ADDR_A {
-			cpu.Register.A = r&0xFF
+			cpu.Register.A = r
 		} else {
-			cpu.Write(opCode.Operand, r&0xFF)
+			cpu.Write(opCode.Operand, r)
 		}
 		cpu.Register.P.Negative = r&0x80 != 0
-		cpu.Register.P.Zero = r&0xFF == 0
+		cpu.Register.P.Zero = r == 0
 		cpu.Register.P.Carry = c
 	case "ROL":
 		if opCode.Mode == ADDR_A {
@@ -334,7 +341,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 			data = cpu.Read(opCode.Operand)
 		}
 		c := data&0x80 != 0
-		r := data<<1 + bool2int(cpu.Register.P.Carry)
+		r := (data<<1)&0xFF + bool2int(cpu.Register.P.Carry)
 		if opCode.Mode == ADDR_A {
 			cpu.Register.A = r&0xFF
 		} else {
@@ -416,7 +423,6 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		h := cpu.PopStack()
 		cpu.Register.PC = h<<8 + l + 1
 	case "BRK":
-		//debug(1)
 		//if !cpu.Register.P.Interrupt {
 		//	cpu.Register.P.Break = true
 		//	cpu.Register.PC++
@@ -545,12 +551,12 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TYA":
 		cpu.Register.A = cpu.Register.Y
-		cpu.Register.P.Negative = cpu.Register.Y&0x80 != 0
-		cpu.Register.P.Zero = cpu.Register.Y == 0
+		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
+		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "TSX":
 		cpu.Register.X = cpu.Register.SP
-		cpu.Register.P.Negative = cpu.Register.SP&0x80 != 0
-		cpu.Register.P.Zero = cpu.Register.SP == 0
+		cpu.Register.P.Negative = cpu.Register.X&0x80 != 0
+		cpu.Register.P.Zero = cpu.Register.X == 0
 	case "TXS":
 		cpu.Register.SP = cpu.Register.X
 	case "PHA":
