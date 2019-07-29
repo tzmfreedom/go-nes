@@ -112,7 +112,7 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 	if nes.ppu.controlRegister & 0x10 != 0 {
 		bgIndex = 0x100 // = 0x1000/16
 	}
-	if len(nes.sprites) > 0 && nes.ppu.controlRegister2 & 0x08 != 0 {
+	if len(nes.sprites) > 0 && nes.ppu.IsBackgroundEnabled() {
 		baseId := nes.ppu.controlRegister & 0x03
 		var baseOffset int
 		switch baseId {
@@ -159,15 +159,11 @@ func (nes *NES) render(pallet *Pallet, sprites []*SpriteData) {
 				c := pallet.getBackgroundColor(palletId, sprite.bitMap[j][i])
 				nes.renderer.SetDrawColor(c.R, c.G, c.B, 0xff)
 				nes.renderer.DrawPoint(int32(x), int32(y))
-				if x == 255 && y == 239 {
-					//debug(baseId, baseOffset, x,y, i, j, nes.ppu.scrollX, nes.ppu.scrollY, scrollX, scrollY)
-					//debug(spriteId)
-				}
 			}
 		}
 	}
 
-	if len(nes.sprites) > 0 && nes.ppu.controlRegister2 & 0x10 != 0 {
+	if len(nes.sprites) > 0 && nes.ppu.IsSpriteEnabled() {
 		for _, sprite := range sprites	{
 			s := nes.sprites[spIndex+sprite.spriteId]
 			isVerticalReverse := sprite.attr & 0x80 != 0

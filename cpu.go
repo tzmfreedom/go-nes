@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
+	"strconv"
 )
 
 type Cpu struct {
@@ -15,6 +17,7 @@ type Cpu struct {
 	GamePadIndex int
 	interrupts *Interrupts
 	isWriteResetFlag bool
+	soundRegister int
 	ExtRAM   []int
 }
 
@@ -48,17 +51,21 @@ func (cpu *Cpu) Write(index int, value int) {
 		cpu.PPU.Write(index-0x2000, value)
 	} else if index < 0x4000 {
 
+	} else if index < 0x4014 {
+		cpu.APU.Write(index, value)
 	} else if index == 0x4014 {
 		// sprite DMA transfer
 		addr := value << 8
-		for i := 0; i < 0xFF; i+=4 {
-			base := i+addr
-			cpu.PPU.spriteRAM[i]   = cpu.RAM[base]
+		for i := 0; i < 0x100; i += 4 {
+			base := i + addr
+			cpu.PPU.spriteRAM[i] = cpu.RAM[base]
 			cpu.PPU.spriteRAM[i+1] = cpu.RAM[base+1]
 			cpu.PPU.spriteRAM[i+2] = cpu.RAM[base+2]
 			cpu.PPU.spriteRAM[i+3] = cpu.RAM[base+3]
 		}
-		cpu.PPU.cycle += 514*3
+		cpu.PPU.cycle += 514 * 3
+	} else if index == 0x4015 {
+		cpu.soundRegister = value
 	} else if index == 0x4016 {
 		// key input
 		//if !cpu.isWriteResetFlag && value == 1 {
@@ -234,7 +241,10 @@ func (cpu *Cpu) Run() int {
 		cpu.ProcessNMI()
 	}
 	if cpu.Register.P.Break {
-		// cpu.ProcessBrk()
+		//cpu.ProcessBrk()
+	}
+	if !cpu.Register.P.Interrupt {
+		//cpu.ProcessIrq()
 	}
 
 	opCodeRaw := cpu.Fetch()
@@ -566,7 +576,7 @@ func (cpu *Cpu) Execute(opCode *OpCode) {
 		cpu.Register.P.Negative = cpu.Register.A&0x80 != 0
 		cpu.Register.P.Zero = cpu.Register.A == 0
 	case "PHP":
-		//cpu.Register.P.Break = true
+		cpu.Register.P.Break = true
 		cpu.PushStack(cpu.Register.P.Int())
 	case "PLP":
 		cpu.Register.P.Set(cpu.PopStack())

@@ -7,6 +7,7 @@ type PPU struct {
 	spriteRAM     []int
 	sprites       []*SpriteData
 	addr          int
+	buffer        int
 	controlRegister int
 	controlRegister2 int
 	statusRegister int
@@ -23,6 +24,14 @@ func NewPPU(interrupts *Interrupts) *PPU {
 		spriteRAM:  make([]int, 0x100),
 		interrupts: interrupts,
 	}
+}
+
+func (ppu *PPU) IsBackgroundEnabled() bool {
+	return ppu.controlRegister2 & 0x08 != 0
+}
+
+func (ppu *PPU) IsSpriteEnabled() bool {
+	return ppu.controlRegister2 & 0x10 != 0
 }
 
 func (ppu *PPU) Read(index int) int {
@@ -48,7 +57,8 @@ func (ppu *PPU) Read(index int) int {
 	case 0x0006:
 		// no action
 	case 0x0007:
-		data := ppu.RAM[ppu.addr]
+		data := ppu.buffer
+		ppu.buffer = ppu.RAM[ppu.addr]
 		if ppu.controlRegister&0x04 == 0 {
 			ppu.addr += 0x01
 		} else {
@@ -111,6 +121,12 @@ func (ppu *PPU) Write(index, data int) {
 		} else {
 			ppu.addr += 0x20
 		}
+		if ppu.addr == 8685 {
+			//debug(current)
+			//debug(newCpu.Register.X)
+			//debug(ppu.addr)
+			//debug(ppu.RAM[ppu.addr])
+		}
 		ppu.addr &= 0x3FFF
 	}
 }
@@ -123,7 +139,7 @@ func (ppu *PPU) Run(cycle int) (bool, *Pallet, []*SpriteData) {
 	if ppu.cycle >= 341 {
 		ppu.cycle -= 341
 		ppu.line++
-		if ppu.line == 1 {
+		if ppu.line == 1 && ppu.IsSpriteEnabled() && ppu.IsBackgroundEnabled() {
 			ppu.controlRegister2 |= 0x40
 		}
 		if ppu.line == 241 {
