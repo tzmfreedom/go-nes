@@ -9,7 +9,7 @@ import (
 type Cpu struct {
 	RAM      []int
 	PPU      *PPU
-	APU      []int
+	APU      *APU
 	Register *Register
 	PrgROM   []byte
 	ChrROM   []byte
@@ -31,6 +31,7 @@ func NewCpu(prgRom []byte) *Cpu {
 		PrgROM: prgRom,
 		GamePad: &GamePad{},
 		PPU: NewPPU(interrupts),
+		APU: NewAPU(),
 		interrupts: interrupts,
 		ExtRAM: make([]int, 0x2000),
 	}
@@ -52,7 +53,7 @@ func (cpu *Cpu) Write(index int, value int) {
 	} else if index < 0x4000 {
 
 	} else if index < 0x4014 {
-		cpu.APU.Write(index, value)
+		cpu.APU.Write(index-0x4000, value)
 	} else if index == 0x4014 {
 		// sprite DMA transfer
 		addr := value << 8
@@ -112,6 +113,12 @@ func (cpu *Cpu) Read(index int) int {
 	}
 	if index < 0x4000 {
 
+	}
+	if index == 0x4015 {
+		return cpu.soundRegister
+	}
+	if index < 0x4016 {
+		return cpu.APU.Read(index-0x4000)
 	}
 	if index == 0x4016 {
 		// key input
