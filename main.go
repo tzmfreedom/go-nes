@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-
 	filename := os.Args[1]
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -37,6 +36,7 @@ func main() {
 type NES struct {
 	cpu        *Cpu
 	ppu        *PPU
+	Audio      *Audio
 	background *BackGround
 	pallet     *Pallet
 	sprites    []*Sprite
@@ -77,6 +77,7 @@ func NewNES(cpu *Cpu, chrRom []byte, hMirror bool) *NES {
 	return &NES{
 		cpu: cpu,
 		ppu: cpu.PPU,
+		Audio: NewAudio(),
 		sprites: sprites,
 		renderer: renderer,
 		window: window,
@@ -91,6 +92,17 @@ func (nes *NES) close() {
 }
 
 func (nes *NES) run() error {
+	if err := sdl.Init(sdl.INIT_AUDIO); err != nil {
+		panic(err)
+	}
+	defer sdl.Quit()
+
+	if err := sdl.OpenAudio(nes.Audio.spec, nil); err != nil {
+		panic(err)
+	}
+	sdl.PauseAudio(false)
+	defer sdl.CloseAudio()
+
 	for {
 		cycle := nes.cpu.Run()
 		vblank, pallet, sprites := nes.ppu.Run(cycle * 3)

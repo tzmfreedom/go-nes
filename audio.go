@@ -2,7 +2,6 @@ package main
 
 // typedef unsigned char Uint8;
 // void MyCallback(void *userdata, Uint8 *stream, int len);
-// void SineWave(void *userdata, Uint8 *stream, int len);
 import "C"
 import (
 	"github.com/veandco/go-sdl2/sdl"
@@ -11,12 +10,12 @@ import (
 )
 
 type Audio struct {
-	spec sdl.AudioSpec
+	spec *sdl.AudioSpec
 }
 
 func NewAudio() *Audio {
 	return &Audio{
-		spec: sdl.AudioSpec{
+		spec: &sdl.AudioSpec{
 			Freq: 44100,              // DSP frequency (samples per second)
 			Format: sdl.AUDIO_S16SYS, // audio data format
 			Channels: 1,              // number of separate sound channels
@@ -32,18 +31,25 @@ func NewAudio() *Audio {
 func (audio *Audio) Run() {
 }
 
+var pre = 0
+
 //export MyCallback
 func MyCallback(userdata unsafe.Pointer, stream *C.Uint8, length C.int) {
 	n := int(length)
-	len := n/2
-	step := 0
 	hdr := reflect.SliceHeader{Data: uintptr(unsafe.Pointer(stream)), Len: n, Cap: n}
 	buf := *(*[]C.Uint8)(unsafe.Pointer(&hdr))
-	for i := 0; i < len; i++ {
-		if (step/10000)%2 == 0 {
-			buf[i] = 1
+	freq := (apu.channel1Register[3] & 0x7)<<8 + apu.channel1Register[2]
+	if freq == 0 {
+		return
+	}
+	th := 44100/freq
+	for i := 0; i < n; i++ {
+		tmp := i + pre
+		if (tmp/th)%2 == 0 {
+			buf[i] = 128
 		} else {
 			buf[i] = 0
 		}
 	}
+	pre = (pre+2048)%th
 }

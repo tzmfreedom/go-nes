@@ -35,6 +35,7 @@ func NewCpu(prgRom []byte) *Cpu {
 		interrupts: interrupts,
 		ExtRAM: make([]int, 0x2000),
 	}
+	apu = cpu.APU
 	cpu.Reset()
 	return cpu
 }
