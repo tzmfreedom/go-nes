@@ -2,13 +2,12 @@ package main
 
 import (
 	"C"
-	"github.com/veandco/go-sdl2/sdl"
 )
 
 var apu *APU
 
 type APU struct {
-	spec sdl.AudioSpec
+	//spec sdl.AudioSpec
 	channel1Register []int
 	channel2Register []int
 }
